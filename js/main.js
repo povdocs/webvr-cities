@@ -209,23 +209,6 @@
 		console.log('removed', object);
 	}
 
-	function scanHMD() {
-		var hmd,
-			timeout = 1000;
-
-		vrEffect.scan();
-		vrControls.scan();
-
-		hmd = vrEffect.hmd();
-
-		if (hmd) {
-			if (hmd.deviceId !== 'debug-0') {
-				timeout = 5000;
-			}
-			setTimeout(scanHMD, timeout);
-		}
-	}
-
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
 
@@ -350,6 +333,12 @@
 				//vrMouse.lock();
 			}
 		});
+
+		vrEffect.addEventListener('devicechange', function () {
+			if (vrEffect.hmd()) {
+				vrButton.disabled = false;
+			}
+		});
 	}
 
 	function initVizi() {
@@ -466,14 +455,6 @@
 				info.className = 'open';
 			}
 		});
-
-		setTimeout(function () {
-			if (vrEffect.hmd()) {
-				vrButton.disabled = false;
-			}
-		}, 1);
-
-		scanHMD();
 	}
 
 	init();

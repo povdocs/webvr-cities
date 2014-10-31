@@ -1,4 +1,4 @@
-THREE.VRControls = function ( object ) {
+THREE.VRControls = function ( object, options ) {
 
 	var self = this;
 
@@ -13,6 +13,9 @@ THREE.VRControls = function ( object ) {
 	var mode = '';
 
 	var vrBrowser = navigator.getVRDevices || navigator.mozGetVRDevices;
+
+	var poll = options && options.poll || 1000;
+	var pollTimeout;
 
 	function gotVRDevices( devices ) {
 		var vrInput;
@@ -32,8 +35,18 @@ THREE.VRControls = function ( object ) {
 				self.zeroSensor();
 
 				mode = 'hmd';
+
+				self.dispatchEvent( {
+					type: "devicechange"
+				} );
+
 				break; // We keep the first we encounter
 			}
+		}
+
+		if (poll) {
+			clearTimeout(pollTimeout);
+			setTimeout(self.scan, poll);
 		}
 	}
 
@@ -46,6 +59,10 @@ THREE.VRControls = function ( object ) {
 			if (!this.freeze) {
 				deviceControls.update();
 			}
+
+			self.dispatchEvent( {
+				type: "devicechange"
+			} );
 		}
 	}
 
@@ -110,3 +127,5 @@ THREE.VRControls = function ( object ) {
 		window.addEventListener( "deviceorientation", deviceOrientationChange, false );
 	}
 };
+
+THREE.VRControls.prototype = Object.create( THREE.EventDispatcher.prototype );

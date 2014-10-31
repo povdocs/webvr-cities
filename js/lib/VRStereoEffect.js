@@ -2,7 +2,7 @@
  * @author bchirls / http://bchirls.com/
  */
 
-THREE.VRStereoEffect = function ( renderer, fullScreenElement ) {
+THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 
 	// internals
 	var self = this;
@@ -28,6 +28,9 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement ) {
 	var fsElementKey;
 
 	var RADIANS = Math.PI / 180;
+
+	var poll = options && options.poll || 1000;
+	var pollTimeout;
 
 	function perspectiveMatrixFromVRFieldOfView(fov, zNear, zFar) {
 		var outMat = new THREE.Matrix4(),
@@ -149,8 +152,18 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement ) {
 				resizeFOV(0);
 
 				fullScreenParam.vrDisplay = hmdDevice;
+
+				self.dispatchEvent( {
+					type: "devicechange"
+				} );
+
 				break;
 			}
+		}
+
+		if (poll) {
+			clearTimeout(pollTimeout);
+			setTimeout(self.scan, poll);
 		}
 	}
 
