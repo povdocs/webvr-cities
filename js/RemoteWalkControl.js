@@ -24,13 +24,12 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 	var orientationQuaternion = new THREE.Quaternion();
 	var euler = new THREE.Euler();
-	var pointerVector = new THREE.Vector3();
+	var yAxis = new THREE.Vector3(0, 1, 0);
+	var offsetAngle = 0;
 
-	function startMoving() {
-	}
-
-	function stopMoving() {
-	}
+	var pointerVector = new THREE.Vector3(0, 0, 1);
+	var moveVector = new THREE.Vector3();
+	var lookVector = new THREE.Vector3(0, 0, 1);
 
 	function updateOrientation( data ) {
 		var alpha,
@@ -78,13 +77,37 @@ THREE.RemoteWalkControl = function ( object, options ) {
 	this.update = function () {
 		var time;
 		var delta;
+		var angle = 0;
+		var speed;
 
 		time = performance.now();
 
-		//throttle speed in case we dropped a lot of frames to prevent barf
+		/*
+		limit movement to prevent barf or getting totally lost,
+		in case we dropped a lot of frames
+		*/
 		delta = Math.min(0.2, time - lastUpdateTime);
 
 		if (moving) {
+			moveVector.set(moveX, 0, moveZ);
+			speed = moveVector.length();
+
+			moveVector.multiply(pointerVector).normalize();
+
+			if (camera) {
+				lookVector
+					.set(0, 0, 1)
+					.applyQuaternion(camera.quaternion)
+					.setY(0)
+					.normalize();
+				angle = Math.abs(lookVector.angleTo(moveVector));
+				speed *= slowSpeed + (moveSpeed - slowSpeed) * Math.pow(1 - angle / Math.PI, 2);
+			} else {
+				speed *= moveSpeed;
+			}
+
+			moveVector.multiplyScalar(speed * delta);
+			object.position.add(moveVector);
 			/*
 			cos = Math.cos(pointerLon);
 			sin = Math.sin(pointerLon);
@@ -125,14 +148,110 @@ THREE.RemoteWalkControl = function ( object, options ) {
 	};
 
 	this.recenter = function () {
+		if (camera) {
+			lookVector
+				.set(0, 0, -1)
+				.applyQuaternion(camera.quaternion)
+				.setY(0)
+				.normalize();
+			offsetAngle = lookVector.angleTo(pointerVector);
+		}
+		neverRecentered = false;
+		self.dispatchEvent( {
+			type: "recenter"
+		} );
 	};
 
 	this.connect = function (id) {
+
+		function peerConnection( conn ) {
+			if ( connection && connection.open ) {
+				/*
+				todo: allow many connections, and pick the first one that sends
+				the data we can use
+				*/
+				console.log( "Only one connection allowed at a time", conn );
+				//conn.close();
+				return;
+			}
+
+			connection = conn;
+
+			connection.on( "data", function ( data ) {
+				if (data.action === 'orientation') {
+					updateOrientation(data);
+					if (neverRecentered) {
+						neverRecentered = false;
+						self.recenter();
+					}
+
+				} else if (data.action === 'recenter') {
+					self.recenter();
+
+				} else if (data.action === 'ping') {
+					connection.send({
+						action: 'pong',
+						pingId: data.pingId
+					});
+
+				} else if (data.action === 'move') {
+					moving = true;
+					moveX = data.x;
+					moveZ = data.z;
+
+				} else if (data.action === 'stop') {
+					moving = false;
+				}
+			});
+
+			connection.on( "error", function ( error ) {
+				self.dispatchEvent( {
+					type: "error",
+					data: error
+				} );
+			} );
+
+			connection.on( "open", function () {
+				console.log("connection open");
+			} );
+
+			connection.on( "close", function () {
+				moving = false;
+				self.dispatchEvent( {
+					type: "disconnected"
+				} );
+				connection = null;
+			} );
+
+			self.dispatchEvent( {
+				type: "connected"
+			} );
+
+			connection = conn;
+		}
+
+		function peerOpen( id ) {
+			self.dispatchEvent( {
+				type: "open",
+				id: id
+			} );
+		}
+
 		if ( peer ) {
 			this.disconnect();
 		}
 
-		peer = new Peer( id, peerOptions );
+		if ( id instanceof window.Peer ) {
+			peer = id;
+			if ( peer.id && peer.open ) {
+				peerOpen( peer.id );
+				if ( peer.connections && peer.connections.length ) {
+					peerConnection( peer.connections[ 0 ] );
+				}
+			}
+		} else {
+			peer = new Peer( id, peerOptions );
+		}
 
 		peer.on( "error", function ( error ) {
 			self.dispatchEvent( {
@@ -142,6 +261,7 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		} );
 
 		peer.on( "disconnected", function () {
+			moving = false;
 			self.dispatchEvent( {
 				type: "peerdisconnected"
 			} );
@@ -153,67 +273,28 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			} );
 		} );
 
-		peer.on( "connection", function ( conn ) {
-			if (connection && connection.open) {
-				//todo: bump existing connection if we haven't had any data from it in a while
-				console.log("Only one connection allowed at a time", conn);
-				conn.close();
-				return;
-			}
+		peer.on( "open", peerOpen );
 
-			self.dispatchEvent( {
-				type: "connected"
-			} );
-
-			connection = conn;
-		} );
-
-		connection.on( "data", function ( data ) {
-			if (data.action === 'orientation') {
-				updateOrientation(data);
-				if (neverRecentered) {
-					neverRecentered = false;
-					self.recenter();
-				}
-
-			} else if (data.action === 'recenter') {
-				self.recenter();
-
-			} else if (data.action === 'ping') {
-				connection.send({
-					action: 'pong',
-					pingId: data.pingId
-				});
-
-			} else if (data.action === 'move') {
-				moving = true;
-				moveX = data.x;
-				moveZ = data.z;
-
-			} else if (data.action === 'stop') {
-				stopMoving();
-			}
-		});
-
-		connection.on( "error", function ( error ) {
-			self.dispatchEvent( {
-				type: "error",
-				data: error
-			} );
-		} );
-
-		connection.on( "close", function () {
-			self.dispatchEvent( {
-				type: "disconnected"
-			} );
-			connection = null;
-		} );
+		peer.on( "connection", peerConnection );
 	};
 
-	this.disconnect = function (id) {
+	this.disconnect = function ( id ) {
 		if ( peer ) {
 			peer.disconnect();
 		}
+		moving = false;
+	};
+
+	this.peer = function () {
+		return peer;
+	};
+
+	this.connected = function () {
+		return !!( connection && connection.open );
+	};
+
+	this.moving = function () {
+		return moving;
 	};
 };
 
