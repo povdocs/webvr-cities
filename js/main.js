@@ -5,6 +5,8 @@
 			z: 0
 		},
 
+		PEER_API_KEY = 'evy8rcz8vdy22o6r',
+
 		START_LAT = 40.7564812,
 		START_LON = -73.9861832,
 
@@ -25,9 +27,10 @@
 		vrEffect,
 		vrControls,
 		vrMouse,
+		walkControl,
 		cityContainer,
 		floorContainer,
-		octree, //for picking, collision detection
+		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
 
 		depthTarget,
@@ -101,23 +104,25 @@
 		//return;
 		delta = Math.min(delta, 0.2); //throttle speed in case we dropped a lot of frames
 
-		if (keys.a) { //look left
-			lookLongitude -= Math.PI * delta / 5;
-		} else if (keys.d) { //look right
-			lookLongitude += Math.PI * delta / 5;
-		}
+		if (vrControls.freeze) {
+			if (keys.a) { //look left
+				lookLongitude -= Math.PI * delta / 5;
+			} else if (keys.d) { //look right
+				lookLongitude += Math.PI * delta / 5;
+			}
 
-		if (keys.w) { //look up
-			lookLatitude = Math.min(0.8 * Math.PI / 2, lookLatitude + Math.PI * delta / 5);
-		} else if (keys.s) { //look down
-			lookLatitude = Math.max(-0.8 * Math.PI / 2, lookLatitude - Math.PI * delta / 5);
-		}
+			if (keys.w) { //look up
+				lookLatitude = Math.min(0.8 * Math.PI / 2, lookLatitude + Math.PI * delta / 5);
+			} else if (keys.s) { //look down
+				lookLatitude = Math.max(-0.8 * Math.PI / 2, lookLatitude - Math.PI * delta / 5);
+			}
 
-		lookTarget.y = Math.sin(lookLatitude);
-		cos = Math.cos(lookLatitude);
-		lookTarget.x = cos * Math.cos(lookLongitude);
-		lookTarget.z = cos * Math.sin(lookLongitude);
-		camera.lookAt(lookTarget);
+			lookTarget.y = Math.sin(lookLatitude);
+			cos = Math.cos(lookLatitude);
+			lookTarget.x = cos * Math.cos(lookLongitude);
+			lookTarget.z = cos * Math.sin(lookLongitude);
+			camera.lookAt(lookTarget);
+		}
 
 		if (moving) {
 			scratchVector.set(0, 0, 0);
@@ -177,8 +182,13 @@
 
 		Mediator.publish('update', tick - lastTick, lastTick);
 
-		updatePosition();
 		vrControls.update();
+
+		if (walkControl.moving()) {
+			walkControl.update();
+		} else {
+			updatePosition();
+		}
 
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
@@ -215,6 +225,7 @@
 		scene = new THREE.Scene();
 		//scene.fog = new THREE.Fog( 0xffffff, FOG * 0.9, FOG );
 
+		/*
 		octree = new THREE.Octree({
 			// uncomment below to see the octree (may kill the fps)
 			//scene: scene,
@@ -230,6 +241,7 @@
 			// helps insert objects that lie over more than one node
 			overlapPct: 0.15
 		});
+		*/
 
 		cityContainer = new THREE.Object3D();
 		cityContainer.scale.multiplyScalar(CITY_SCALE);
@@ -365,9 +377,68 @@
 		Mediator.subscribe('removeFromScene', removeObject);
 	}
 
+	function initControls() {
+		var qrCode,
+			connectionInfo = document.getElementById('connection-info');
+
+		function lostConnection() {
+			var peer = walkControl.peer();
+			if (peer && peer.open) {
+				connectionInfo.style.display = '';
+			}
+		}
+
+		walkControl = new THREE.RemoteWalkControl(head, {
+			peerApiKey: PEER_API_KEY,
+			camera: camera,
+			moveSpeed: MOVE_SPEED
+		});
+
+		walkControl.addEventListener('open', function (evt) {
+			var peerId = evt.id,
+				url,
+				location = window.location,
+				path;
+
+			path = location.pathname.split('/');
+			path.pop();
+			url = location.origin + path.join('/') + '/touch.html#' + peerId;
+			document.getElementById('link').setAttribute('href', url);
+			connectionInfo.style.display = '';
+			window.location.hash = peerId;
+
+			if (!qrCode) {
+				qrCode = new QRCode('qrcode', {
+					text: url,
+					width: 200,
+					height: 200,
+					correctLevel: QRCode.CorrectLevel.L
+				});
+			} else {
+				qrCode.makeImage(url);
+			}
+		});
+
+		walkControl.addEventListener('connected', function () {
+			connectionInfo.style.display = 'none';
+			console.log('remote connected');
+		});
+
+		walkControl.addEventListener('error', lostConnection);
+		walkControl.addEventListener('close', lostConnection);
+		walkControl.addEventListener('disconnected', lostConnection);
+
+		walkControl.addEventListener('recenter', function () {
+			console.log('recenter');
+		});
+
+		walkControl.connect(window.location.hash.substr(1));
+	}
+
 	function init() {
 		initScene();
 		initVizi();
+		initControls();
 
 		resize();
 		window.addEventListener('resize', resize, false);
