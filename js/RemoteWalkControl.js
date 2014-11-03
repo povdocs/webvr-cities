@@ -24,12 +24,13 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 	var orientationQuaternion = new THREE.Quaternion();
 	var euler = new THREE.Euler();
-	var yAxis = new THREE.Vector3(0, 1, 0);
+	var yAxis = new THREE.Vector3( 0, 1, 0 );
 	var offsetAngle = 0;
 
-	var pointerVector = new THREE.Vector3(0, 0, 1);
+	var pointerVector = new THREE.Vector3( 0, 0, 1 );
+	var horizontalPointerVector = new THREE.Vector3( 0, 0, 1 );
 	var moveVector = new THREE.Vector3();
-	var lookVector = new THREE.Vector3(0, 0, 1);
+	var lookVector = new THREE.Vector3( 0, 0, 1 );
 
 	function updateOrientation( data ) {
 		var alpha,
@@ -52,12 +53,17 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		// form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
 
 		// 'ZXY' for the device, but 'YXZ' for us
-		euler.set(beta, alpha, - gamma, 'YXZ');
+		euler.set( beta, alpha, - gamma, 'YXZ' );
 
-		orientationQuaternion.setFromEuler(euler);
+		orientationQuaternion.setFromEuler( euler );
 
-		pointerVector.set(0, 0, -1).applyQuaternion(orientationQuaternion);
-		pointerVector.applyAxisAngle(yAxis, offsetAngle);
+		pointerVector.set( 0, 0, -1 ).applyQuaternion( orientationQuaternion );
+		pointerVector.applyAxisAngle( yAxis, offsetAngle );
+
+		horizontalPointerVector
+			.copy( pointerVector )
+			.setY( 0 )
+			.normalize();
 
 		// pointerLat = Math.asin(pointerVector.y);
 		// pointerLon = Math.acos(pointerVector.z / Math.cos(pointerLat));
@@ -89,73 +95,51 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		delta = Math.min(0.2, time - lastUpdateTime);
 
 		if (moving) {
-			moveVector.set(moveX, 0, moveZ);
-			speed = moveVector.length();
+			moveVector.set(
+				horizontalPointerVector.x * moveZ + horizontalPointerVector.z * moveX,
+				0,
+				horizontalPointerVector.z * moveZ - horizontalPointerVector.x * moveX
+			);
 
-			moveVector.multiply(pointerVector).normalize();
+			speed = moveVector.length();
 
 			if (camera) {
 				lookVector
-					.set(0, 0, 1)
-					.applyQuaternion(camera.quaternion)
-					.setY(0)
+					.set( 0, 0, 1 )
+					.applyQuaternion( camera.quaternion )
+					.setY( 0 )
 					.normalize();
-				angle = Math.abs(lookVector.angleTo(moveVector));
-				speed *= slowSpeed + (moveSpeed - slowSpeed) * Math.pow(1 - angle / Math.PI, 2);
+				angle = Math.abs( lookVector.angleTo( moveVector ) );
+				speed *= slowSpeed + ( moveSpeed - slowSpeed ) * Math.pow( 1 - angle / Math.PI, 2 );
 			} else {
 				speed *= moveSpeed;
 			}
 
-			moveVector.multiplyScalar(speed * delta);
-			object.position.add(moveVector);
-			/*
-			cos = Math.cos(pointerLon);
-			sin = Math.sin(pointerLon);
-
-			z = cos * moveZ - sin * moveX;
-			x = sin * moveZ + cos * moveX;
-
-			//normalize for calculating longitude of movement vector
-			length = Math.sqrt(x * x + z * z);
-			moveLongitude = Math.acos(z / length);
-			if (x < 0) {
-				moveLongitude *= -1;
-			}
-
-			vector = new THREE.Vector3(0, 0, 1);
-			vector.applyQuaternion(camera.quaternion);
-			vector.normalize();
-
-			cos = Math.cos(Math.asin(vector.y));
-			if (cos) {
-				cameraLon = Math.acos(vector.z / cos);
-				if (vector.x < 0) {
-					cameraLon *= -1;
-				}
-
-				//slow down if you're not moving in the direction you're looking
-				//so you don't puke
-
-				speed = SLOW_SPEED + (MOVE_SPEED - SLOW_SPEED) * Math.pow(1 - Math.abs(moveLongitude - cameraLon) / Math.PI, 2);
-			}
-
-			object.position.z += z * delta * speed;
-			object.position.x += x * delta * speed;
-			*/
+			moveVector.multiplyScalar( speed * delta );
+			object.position.add( moveVector );
 		}
 
 		lastUpdateTime = time;
 	};
 
 	this.recenter = function () {
+		var previousOffset;
+
 		if (camera) {
+			previousOffset = offsetAngle;
+
 			lookVector
-				.set(0, 0, -1)
-				.applyQuaternion(camera.quaternion)
-				.setY(0)
+				.set( 0, 0, 1 )
+				.applyQuaternion( camera.quaternion )
+				.setY( 0 )
 				.normalize();
-			offsetAngle = lookVector.angleTo(pointerVector);
+
+			offsetAngle = lookVector.angleTo( horizontalPointerVector );
+
+			horizontalPointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
+			pointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
 		}
+
 		neverRecentered = false;
 		self.dispatchEvent( {
 			type: "recenter"
