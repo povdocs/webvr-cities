@@ -22,6 +22,7 @@
 		// Three.js stuff
 		camera,
 		head,
+		compass,
 		scene,
 		renderer,
 		vrEffect,
@@ -184,9 +185,8 @@
 
 		vrControls.update();
 
-		if (walkControl.moving()) {
-			walkControl.update();
-		} else {
+		walkControl.update();
+		if (!walkControl.moving()) {
 			updatePosition();
 		}
 
@@ -255,9 +255,19 @@
 		scene.add(head);
 
 		camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 2, 40000);
-		//camera.rotateY(Math.PI);
-		//camera.lookAt(lookTarget);
 		head.add(camera);
+
+		compass = new THREE.Object3D();
+		compass.position.y = -5;
+		compass.add(
+			new THREE.ArrowHelper(
+				new THREE.Vector3( 0, 0, -2 ),
+				new THREE.Vector3( 0, 0, 0 ),
+				5,
+				0x00f800
+			)
+		);
+		head.add(compass);
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
@@ -391,7 +401,8 @@
 		walkControl = new THREE.RemoteWalkControl(head, {
 			peerApiKey: PEER_API_KEY,
 			camera: camera,
-			moveSpeed: MOVE_SPEED
+			moveSpeed: MOVE_SPEED,
+			compass: compass
 		});
 
 		walkControl.addEventListener('open', function (evt) {

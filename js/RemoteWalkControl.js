@@ -12,6 +12,7 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		key: peerApiKey
 	};
 	var camera = options.camera || object;
+	var compass = options.compass;
 	//todo: allow configurable up vector. for now assume it's +Y
 
 	var peer;
@@ -65,11 +66,10 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			.setY( 0 )
 			.normalize();
 
-		// pointerLat = Math.asin(pointerVector.y);
-		// pointerLon = Math.acos(pointerVector.z / Math.cos(pointerLat));
-		// if (pointerVector.x < 0) {
-		// 	pointerLon *= -1;
-		// }
+		if ( compass ) {
+			compass.quaternion.copy( orientationQuaternion );
+			compass.rotateOnAxis( yAxis, offsetAngle );
+		}
 	}
 
 	if ( !object || !( object instanceof THREE.Object3D ) ) {
@@ -94,7 +94,19 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		*/
 		delta = Math.min(0.2, time - lastUpdateTime);
 
-		if (moving) {
+		if ( moving || compass ) {
+			lookVector
+				.set( 0, 0, -1 )
+				.applyQuaternion( camera.quaternion )
+				.setY( 0 )
+				.normalize();
+
+			if ( compass ) {
+				//compass.lookAt( lookVector );
+			}
+		}
+
+		if ( moving ) {
 			moveVector.set(
 				horizontalPointerVector.x * moveZ + horizontalPointerVector.z * moveX,
 				0,
@@ -104,11 +116,6 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			speed = moveVector.length();
 
 			if (camera) {
-				lookVector
-					.set( 0, 0, -1 )
-					.applyQuaternion( camera.quaternion )
-					.setY( 0 )
-					.normalize();
 				angle = Math.abs( lookVector.angleTo( moveVector ) );
 				speed *= slowSpeed + ( moveSpeed - slowSpeed ) * Math.pow( 1 - angle / Math.PI, 2 );
 			} else {
@@ -153,6 +160,12 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 			horizontalPointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
 			pointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
+
+			if ( compass ) {
+				compass.quaternion.copy( orientationQuaternion );
+				compass.rotateOnAxis( yAxis, offsetAngle );
+			}
+
 		}
 
 		neverRecentered = false;
