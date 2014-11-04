@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>WebVR Touch/Orientation Experiment</title>
+		<meta charset="utf-8"/>
+		<meta http-equiv="X-UA-Compatible" content="IE-edge"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+		<style>
+			@viewport {
+				orientation: portrait;
+			}
+			body {
+				font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+				color: #eee;
+				overflow: hidden;
+				background: rgb(40, 40, 40);
+
+				height: 100%;
+				width: 100%;
+				margin: 0px;
+				padding: 0px;
+			}
+
+			#info {
+				display: none;
+			}
+
+		</style>
+	</head>
+	<body>
+		<p>Point at an object and tap to select. Tap again to de-select</p>
+		<p>Drag with one finger to move around</p>
+		<p>To re-center, point device forward and touch with two fingers</p>
+		<div id="info">
+			<div id="status"></div>
+			<div id="absolute"></div>
+			<div id="alpha"></div>
+			<div id="beta"></div>
+			<div id="gamma"></div>
+		</div>
+	</body>
+	<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+	<script src="js/touch.js"></script>
+</html>
