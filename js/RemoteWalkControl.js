@@ -105,7 +105,7 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 			if (camera) {
 				lookVector
-					.set( 0, 0, 1 )
+					.set( 0, 0, -1 )
 					.applyQuaternion( camera.quaternion )
 					.setY( 0 )
 					.normalize();
@@ -116,25 +116,40 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			}
 
 			moveVector.multiplyScalar( speed * delta );
-			object.position.add( moveVector );
+			object.position.sub( moveVector );
 		}
 
 		lastUpdateTime = time;
 	};
 
 	this.recenter = function () {
-		var previousOffset;
+		var previousOffset,
+			cameraAngle,
+			pointerAngle;
 
 		if (camera) {
 			previousOffset = offsetAngle;
 
 			lookVector
-				.set( 0, 0, 1 )
+				.set( 0, 0, -1 )
 				.applyQuaternion( camera.quaternion )
 				.setY( 0 )
 				.normalize();
 
-			offsetAngle = lookVector.angleTo( horizontalPointerVector );
+			//cannot recenter if camera is looking straight up or straight down
+			if (!lookVector.x && !lookVector.z) {
+				return;
+			}
+
+			cameraAngle = Math.acos(lookVector.z);
+			if (lookVector.x < 0) {
+				cameraAngle *= -1;
+			}
+			pointerAngle = Math.acos(horizontalPointerVector.z);
+			if (horizontalPointerVector.x < 0) {
+				pointerAngle *= -1;
+			}
+			offsetAngle = cameraAngle - pointerAngle + previousOffset;
 
 			horizontalPointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
 			pointerVector.applyAxisAngle( yAxis, offsetAngle - previousOffset );
