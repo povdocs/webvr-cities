@@ -255,6 +255,10 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		}
 
 		if ( peer ) {
+			if ( ( id === peer.id || id === peer ) && peer.open ) {
+				return;
+			}
+
 			this.disconnect();
 		}
 
