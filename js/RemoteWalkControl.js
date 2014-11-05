@@ -11,6 +11,7 @@ THREE.RemoteWalkControl = function ( object, options ) {
 	var peerOptions = options.peerOptions || {
 		key: peerApiKey
 	};
+	var allowFlip = options.allowFlip === false ? false : true;
 	var camera = options.camera || object;
 	var compass = options.compass;
 	//todo: allow configurable up vector. for now assume it's +Y
@@ -54,9 +55,17 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		// form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
 
 		// 'ZXY' for the device, but 'YXZ' for us
-		euler.set( beta, alpha, - gamma, 'YXZ' );
+		euler.set( beta, alpha, - gamma, "YXZ" );
 
 		orientationQuaternion.setFromEuler( euler );
+
+		if ( compass ) {
+			compass.quaternion.copy( orientationQuaternion );
+			compass.rotateOnAxis( yAxis, offsetAngle );
+		}
+
+		// adjust for object's orientation relative to its parent
+		orientationQuaternion.multiply( object.quaternion );
 
 		pointerVector.set( 0, 0, -1 ).applyQuaternion( orientationQuaternion );
 		pointerVector.applyAxisAngle( yAxis, offsetAngle );
@@ -66,10 +75,6 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			.setY( 0 )
 			.normalize();
 
-		if ( compass ) {
-			compass.quaternion.copy( orientationQuaternion );
-			compass.rotateOnAxis( yAxis, offsetAngle );
-		}
 	}
 
 	if ( !object || !( object instanceof THREE.Object3D ) ) {
@@ -94,18 +99,6 @@ THREE.RemoteWalkControl = function ( object, options ) {
 		*/
 		delta = Math.min(0.2, time - lastUpdateTime);
 
-		if ( moving || compass ) {
-			lookVector
-				.set( 0, 0, -1 )
-				.applyQuaternion( camera.quaternion )
-				.setY( 0 )
-				.normalize();
-
-			if ( compass ) {
-				//compass.lookAt( lookVector );
-			}
-		}
-
 		if ( moving ) {
 			moveVector.set(
 				horizontalPointerVector.x * moveZ + horizontalPointerVector.z * moveX,
@@ -116,6 +109,13 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			speed = moveVector.length();
 
 			if (camera) {
+				lookVector
+					.set( 0, 0, -1 )
+					.applyQuaternion( camera.quaternion )
+					.applyQuaternion( object.quaternion )
+					.setY( 0 )
+					.normalize();
+
 				angle = Math.abs( lookVector.angleTo( moveVector ) );
 				speed *= slowSpeed + ( moveSpeed - slowSpeed ) * Math.pow( 1 - angle / Math.PI, 2 );
 			} else {
@@ -123,7 +123,7 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			}
 
 			moveVector.multiplyScalar( speed * delta );
-			object.position.sub( moveVector );
+			object.position.add( moveVector );
 		}
 
 		lastUpdateTime = time;
@@ -190,28 +190,33 @@ THREE.RemoteWalkControl = function ( object, options ) {
 			connection = conn;
 
 			connection.on( "data", function ( data ) {
-				if (data.action === 'orientation') {
+				if (data.action === "orientation") {
 					updateOrientation(data);
 					if (neverRecentered) {
 						neverRecentered = false;
 						self.recenter();
 					}
 
-				} else if (data.action === 'recenter') {
+				} else if (data.action === "flip") {
+					if ( allowFlip ) {
+						self.flip();
+					}
+
+				} else if (data.action === "recenter") {
 					self.recenter();
 
-				} else if (data.action === 'ping') {
+				} else if (data.action === "ping") {
 					connection.send({
-						action: 'pong',
+						action: "pong",
 						pingId: data.pingId
 					});
 
-				} else if (data.action === 'move') {
+				} else if (data.action === "move") {
 					moving = true;
 					moveX = data.x;
 					moveZ = data.z;
 
-				} else if (data.action === 'stop') {
+				} else if (data.action === "stop") {
 					moving = false;
 				}
 			});
@@ -307,6 +312,10 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 	this.moving = function () {
 		return moving;
+	};
+
+	this.flip = function () {
+		object.rotateOnAxis( yAxis, Math.PI );
 	};
 };
 

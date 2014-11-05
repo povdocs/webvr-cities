@@ -188,6 +188,55 @@
 		return window.orientation || 0;
 	}
 
+	function initShake() {
+		var lastTime = 0,
+			lastX,
+			lastY,
+			lastZ,
+			threshold = 15;
+
+		window.addEventListener('devicemotion', function (evt) {
+			var current = evt.accelerationIncludingGravity,
+				time,
+				diff,
+				deltaX = 0,
+				deltaY = 0,
+				deltaZ = 0,
+				dist;
+
+			if (lastX !== undefined) {
+				deltaX = Math.abs(lastX - current.x);
+				deltaY = Math.abs(lastY - current.y);
+				deltaZ = Math.abs(lastZ - current.z);
+
+				// if (deltaX > threshold &&
+				// 		(deltaY > threshold || deltaZ > threshold)
+				// 	) {
+				dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+				if (dist > threshold) {
+
+					time = Date.now();
+					diff = time - lastTime;
+					if (connection && connection.open && diff > 1000) {
+
+						connection.send({
+							action: 'flip'
+						});
+						if (navigator.vibrate) {
+							navigator.vibrate(100);
+						}
+
+						lastTime = Date.now();
+					}
+				}
+			}
+
+			lastX = current.x;
+			lastY = current.y;
+			lastZ = current.z;
+		}, false);
+	}
+
 	function initOrientation() {
 		var absolute = document.getElementById('absolute'),
 			alpha = document.getElementById('alpha'),
@@ -288,6 +337,7 @@
 	}
 
 	initOrientation();
+	initShake();
 	initTouch();
 	initFullScreen();
 	initPeer(window.location.hash.substr(1));
