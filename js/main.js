@@ -16,12 +16,13 @@
 		FOG = 250,
 		MOVE_SPEED = 800,
 		SLOW_SPEED = MOVE_SPEED / 2,
-		CITY_SCALE = 1,
+		CITY_SCALE = 6,
 		COLLISION_RADIUS = 1,
 
 		// Three.js stuff
 		camera,
-		head,
+		body,
+		pointer,
 		compass,
 		scene,
 		renderer,
@@ -147,18 +148,18 @@
 			if (distance) {
 				/*
 				scratchVector2.copy(scratchVector).normalize().setY(0.001);
-				rayCaster.set(head.position, scratchVector2);
+				rayCaster.set(body.position, scratchVector2);
 				//rayCaster.far = distance + COLLISION_RADIUS;
-				octreeResults = octree.search(head.position, rayCaster.far, true, scratchVector2);
+				octreeResults = octree.search(body.position, rayCaster.far, true, scratchVector2);
 				intersections = rayCaster.intersectOctreeObjects(octreeResults, true);
 				//intersections = rayCaster.intersectObjects(octree.objects, true);
 				if (!intersections.length) {
 					//*/
-					head.position.add(scratchVector);
-					floorContainer.position.x = head.position.x;
-					floorContainer.position.z = head.position.z;
+					body.position.add(scratchVector);
+					floorContainer.position.x = body.position.x;
+					floorContainer.position.z = body.position.z;
 
-					scratchVector.copy(head.position).divideScalar(CITY_SCALE);
+					scratchVector.copy(body.position).divideScalar(CITY_SCALE);
 					Mediator.publish('targetPositionChanged', scratchVector);
 					//vrMouse.update(); //only need this if the world is animating
 				//}
@@ -247,19 +248,19 @@
 		cityContainer.scale.multiplyScalar(CITY_SCALE);
 		scene.add(cityContainer);
 
-		head = new THREE.Object3D();
-		head.rotateY(Math.PI);
-		head.position.x = initialCameraPosition.x;
-		head.position.y = initialCameraPosition.y;
-		head.position.z = initialCameraPosition.z;
-		scene.add(head);
+		body = new THREE.Object3D();
+		body.position.x = initialCameraPosition.x;
+		body.position.y = initialCameraPosition.y;
+		body.position.z = initialCameraPosition.z;
+		scene.add(body);
 
 		camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 2, 40000);
-		head.add(camera);
+		body.add(camera);
 
-		compass = new THREE.Object3D();
-		compass.position.y = -5;
-		compass.add(
+		pointer = new THREE.Object3D();
+		pointer.position.y = -5;
+		pointer.add(
+			//todo: make a better-looking pointer
 			new THREE.ArrowHelper(
 				new THREE.Vector3( 0, 0, -2 ),
 				new THREE.Vector3( 0, 0, 0 ),
@@ -267,7 +268,7 @@
 				0x00f800
 			)
 		);
-		head.add(compass);
+		body.add(pointer);
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
@@ -398,11 +399,11 @@
 			}
 		}
 
-		walkControl = new THREE.RemoteWalkControl(head, {
+		walkControl = new THREE.RemoteWalkControl(body, {
 			peerApiKey: PEER_API_KEY,
 			camera: camera,
 			moveSpeed: MOVE_SPEED,
-			compass: compass
+			compass: pointer
 		});
 
 		walkControl.addEventListener('open', function (evt) {
