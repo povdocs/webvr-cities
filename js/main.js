@@ -168,15 +168,25 @@
 	}
 
 	function resize() {
-		camera.aspect = window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		var width = window.innerWidth,
+			height = window.innerHeight,
+			devicePixelRatio = window.devicePixelRatio || 1;
 
-		depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-		sceneTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		if (!vrEffect.isFullscreen()) {
+			width *= devicePixelRatio;
+			height *= devicePixelRatio;
+		}
+
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
+		//renderer.setSize(width, height);
+		renderer.setSize(width / devicePixelRatio, height / devicePixelRatio);
+
+		depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		sceneTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
 		ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
 		ssaoEffect.uniforms.tDepth.value = depthTarget;
-		ssaoEffect.uniforms.size.value.set( window.innerWidth / 2, window.innerHeight );
+		ssaoEffect.uniforms.size.value.set( width / 2, height );
 	}
 
 	function render() {
@@ -332,14 +342,14 @@
 
 		// postprocessing
 
-		depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-		sceneTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		// depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		// sceneTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
 
 		ssaoEffect = new THREE.ShaderPass( THREE.SSAOShader );
 		ssaoEffect.uniforms.lumInfluence.value = 0.8;
-		ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
-		ssaoEffect.uniforms.tDepth.value = depthTarget;
-		ssaoEffect.uniforms.size.value.set( window.innerWidth, window.innerHeight );
+		// ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
+		// ssaoEffect.uniforms.tDepth.value = depthTarget;
+		// ssaoEffect.uniforms.size.value.set( window.innerWidth, window.innerHeight );
 		ssaoEffect.uniforms.cameraNear.value = camera.near;
 		ssaoEffect.uniforms.cameraFar.value = camera.far;
 		ssaoEffect.renderToScreen = true;
