@@ -8129,21 +8129,9 @@ if (typeof window === undefined) {
       var model = result.model;
       var offset = result.offset;
 
-      // Convert typed data back to arrays
-      model.vertices = Array.apply( [], model.vertices );
-      model.normals = Array.apply( [], model.normals );
       // Wrap UVs within an array
       // https://github.com/mrdoob/three.js/blob/master/examples/js/exporters/GeometryExporter.js#L231
-      model.uvs = [ Array.apply( [], model.uvs ) ];
-      
-      // Keep getting a "Maximum call stack size exceeded" error here
-      //model.faces = Array.apply( [], model.faces );
-      var faces = [];
-      _.each(model.faces, function(face) {
-        faces.push(face);
-      });
-
-      model.faces = faces;
+      model.uvs = [ model.uvs ];
 
       // TODO: Stop this locking up the browser
       // No visible lock up at all when removed
@@ -9256,6 +9244,7 @@ if (typeof window === undefined) {
   // Split object string into real values
   // Retreives the value for "exampleObj.property"
   // Also retreives the value for "exampleObj.geometry[0]"
+  var dRegex = /\[(\d+)\]/;
   VIZI.BlueprintSwitchboard.prototype.getValueByKeys = function(object, keys) {
     var output = object;
     
@@ -9263,7 +9252,7 @@ if (typeof window === undefined) {
       if (!output) return null;
 
       // Check for array reference in key
-      if (/\[(\d+)\]/.test(key)) {
+      if (dRegex.test(key)) {
         var arrayKey = key.split("[")[0];
 
         var arrayIndexRegEx = /\[(\d+)\]/g;
