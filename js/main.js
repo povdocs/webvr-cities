@@ -1,7 +1,7 @@
 (function () {
 	var initialCameraPosition = {
 			x: 0,
-			y: 801.82,
+			y: 130,
 			z: 0
 		},
 
@@ -14,7 +14,7 @@
 		// START_LAT = 38.89854112150404,
 
 		FOG = 250,
-		MOVE_SPEED = 800,
+		MOVE_SPEED = 130,
 		SLOW_SPEED = MOVE_SPEED / 2,
 		CITY_SCALE = 6,
 		COLLISION_RADIUS = 1,
@@ -41,10 +41,7 @@
 		ssaoEffect,
 
 		//VIZI stuff
-		Mediator = VIZI.Mediator,
-		viziData,
-		viziGeo,
-		lastTick,
+		viziWorld,
 
 		keys = {
 			forward: false,
@@ -79,7 +76,7 @@
 	function startMoving() {
 		if (!moving) {
 			// start moving in whichever direction the camera is looking
-			moveVector.set(0, 0, 1).applyQuaternion(camera.quaternion);
+			moveVector.set(0, 0, -1).applyQuaternion(camera.quaternion);
 
 			//only move along the ground
 			moveVector.setY(0).normalize();
@@ -159,8 +156,15 @@
 					floorContainer.position.x = body.position.x;
 					floorContainer.position.z = body.position.z;
 
-					scratchVector.copy(body.position).divideScalar(CITY_SCALE);
-					Mediator.publish('targetPositionChanged', scratchVector);
+					scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
+
+					var point = new VIZI.Point(body.position.x, body.position.z);
+					VIZI.Messenger.emit('controls:move', point);
+
+					// TODO: Only emit this if it has changed
+					//var zoom = self.getZoom();
+					//VIZI.Messenger.emit("controls:zoom", zoom);
+					//Mediator.publish('targetPositionChanged', scratchVector);
 					//vrMouse.update(); //only need this if the world is animating
 				//}
 			}
@@ -191,7 +195,7 @@
 	function render() {
 		var tick = Date.now();
 
-		Mediator.publish('update', tick - lastTick, lastTick);
+		//Mediator.publish('update', tick - lastTick, lastTick);
 
 		vrControls.update();
 
@@ -213,10 +217,11 @@
 		requestAnimationFrame( render );
 	}
 
+	/*
 	function addObject(object) {
 		cityContainer.add(object);
 		// octree.add(object, {
-		//  	useFaces: true
+		//		useFaces: true
 		// });
 		console.log('added', object);
 	}
@@ -228,11 +233,12 @@
 		// });
 		console.log('removed', object);
 	}
+	*/
 
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
 
-		scene = new THREE.Scene();
+		//scene = new THREE.Scene();
 		//scene.fog = new THREE.Fog( 0xffffff, FOG * 0.9, FOG );
 
 		/*
@@ -253,9 +259,11 @@
 		});
 		*/
 
+		/*
 		cityContainer = new THREE.Object3D();
 		cityContainer.scale.multiplyScalar(CITY_SCALE);
 		scene.add(cityContainer);
+		*/
 
 		body = new THREE.Object3D();
 		body.position.x = initialCameraPosition.x;
@@ -263,7 +271,7 @@
 		body.position.z = initialCameraPosition.z;
 		scene.add(body);
 
-		camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 2, 40000);
+		//camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 2, 40000);
 		body.add(camera);
 
 		pointer = new THREE.Object3D();
@@ -290,8 +298,9 @@
 		floor.rotation.x = - 90 * Math.PI / 180;
 		floor.name = 'floor';
 		floorContainer.add(floor);
-		addObject(floorContainer);
+		scene.add(floorContainer);
 
+		/*
 		var directionalLight = new THREE.DirectionalLight( 0x999999 );
 		directionalLight.intesity = 0.1;
 		THREE.ColorConverter.setHSV( directionalLight.color, 0.1, 0.1, 0.55 );
@@ -300,15 +309,16 @@
 		directionalLight.position.z = 1;
 		scene.add(directionalLight);
 
-	    var directionalLight2 = new THREE.DirectionalLight( 0x999999 );
-	    directionalLight2.intesity = 0.1;
-	    // THREE.ColorConverter.setHSV( directionalLight2.color, 0.1, 0.1, 0.5 );
-	    directionalLight2.position.x = -1;
-	    directionalLight2.position.y = 1;
-	    directionalLight2.position.z = -1;
-	    scene.add(directionalLight2);
+			var directionalLight2 = new THREE.DirectionalLight( 0x999999 );
+			directionalLight2.intesity = 0.1;
+			// THREE.ColorConverter.setHSV( directionalLight2.color, 0.1, 0.1, 0.5 );
+			directionalLight2.position.x = -1;
+			directionalLight2.position.y = 1;
+			directionalLight2.position.z = -1;
+			scene.add(directionalLight2);
+			*/
 
-	    /*
+			/*
 		var loader = new THREE.OBJMTLLoader();
 		loader.load( 'Godzilla/Godzilla.obj', 'Godzilla/Godzilla.mtl', function ( object ) {
 			//recenterCompoundObject(object);
@@ -374,27 +384,157 @@
 	}
 
 	function initVizi() {
-		//VIZI.DEBUG = true;
-		//VIZI.ENABLE_OUTLINES = true;
-		//VIZI.ENABLE_ROADS = true;
-
-		geo = VIZI.Geo.getInstance({
-			center: [START_LON, START_LAT] //midtown manhattan
+		var world = new VIZI.World({
+			viewport: document.body,
+			center: new VIZI.LatLon(START_LAT, START_LON),
+			zoom: 19,
+			suppressRenderer: true
 		});
 
-		grid = VIZI.Grid.getInstance();
-		grid.init(geo.center);
+		scene = world.scene.scene;
+		camera = world.camera.camera;
+		camera.position.set(0, 0, 0);
+		camera.rotation.set(0, 0, 0);
 
-		data = new VIZI.DataOverpass({
-			gridUpdate: true
+		var switchboardBuildings = new VIZI.BlueprintSwitchboard({
+			input: {
+				type: "BlueprintInputGeoJSON",
+				options: {
+					tilePath: "http://vector.mapzen.com/osm/buildings/{z}/{x}/{y}.json"
+				}
+			},
+			output: {
+				type: "BlueprintOutputBuildingTiles",
+				options: {
+					grids: [{
+						zoom: 15,
+						tilesPerDirection: 1,
+						cullZoom: 13
+					}],
+					workerURL: "js/lib/vizi-worker.js"
+				}
+			},
+			triggers: [{
+				triggerObject: "output",
+				triggerName: "initialised",
+				triggerArguments: ["tiles"],
+				actionObject: "input",
+				actionName: "requestTiles",
+				actionArguments: ["tiles"],
+				actionOutput: {
+					tiles: "tiles" // actionArg: triggerArg
+				}
+			}, {
+				triggerObject: "output",
+				triggerName: "gridUpdated",
+				triggerArguments: ["tiles"],
+				actionObject: "input",
+				actionName: "requestTiles",
+				actionArguments: ["tiles"],
+				actionOutput: {
+					tiles: "tiles" // actionArg: triggerArg
+				}
+			}, {
+				triggerObject: "input",
+				triggerName: "tileReceived",
+				triggerArguments: ["geoJSON", "tile"],
+				actionObject: "output",
+				actionName: "outputBuildingTile",
+				actionArguments: ["buildings", "tile"],
+				actionOutput: {
+					buildings: {
+						process: "map",
+						itemsObject: "geoJSON",
+						itemsProperties: "features",
+						transformation: {
+							outline: "geometry.coordinates",
+							height: "properties.height"
+						}
+					},
+					tile: "tile"
+				}
+			}]
 		});
+		switchboardBuildings.addToWorld(world);
 
-		data.update().done(function() {
-			VIZI.Log('Finished loading Overpass data');
+		var switchboardMap = new VIZI.BlueprintSwitchboard({
+			input: {
+				type: "BlueprintInputMapTiles",
+				options: {
+					tilePath: "https://a.tiles.mapbox.com/v3/examples.map-i86l3621/{z}/{x}/{y}@2x.png"
+				}
+			},
+			output: {
+				type: "BlueprintOutputImageTiles",
+				options: {
+					grids: [{
+						zoom: 19,
+						tilesPerDirection: 3,
+						cullZoom: 17
+					}, {
+						zoom: 18,
+						tilesPerDirection: 3,
+						cullZoom: 16
+					}, {
+						zoom: 17,
+						tilesPerDirection: 3,
+						cullZoom: 15
+					}, {
+						zoom: 16,
+						tilesPerDirection: 3,
+						cullZoom: 14
+					}, {
+						zoom: 15,
+						tilesPerDirection: 3,
+						cullZoom: 13
+					}, {
+						zoom: 14,
+						tilesPerDirection: 3,
+						cullZoom: 12
+					}, {
+						zoom: 13,
+						tilesPerDirection: 5,
+						cullZoom: 11
+					}]
+				}
+			},
+			triggers: [{
+				triggerObject: "output",
+				triggerName: "initialised",
+				triggerArguments: ["tiles"],
+				actionObject: "input",
+				actionName: "requestTiles",
+				actionArguments: ["tiles"],
+				actionOutput: {
+					tiles: "tiles" // actionArg: triggerArg
+				}
+			}, {
+				triggerObject: "output",
+				triggerName: "gridUpdated",
+				triggerArguments: ["tiles"],
+				actionObject: "input",
+				actionName: "requestTiles",
+				actionArguments: ["tiles"],
+				actionOutput: {
+					tiles: "tiles" // actionArg: triggerArg
+				}
+			}, {
+				triggerObject: "input",
+				triggerName: "tileReceived",
+				triggerArguments: ["image", "tile"],
+				actionObject: "output",
+				actionName: "outputImageTile",
+				actionArguments: ["image", "tile"],
+				actionOutput: {
+					image: "image", // actionArg: triggerArg
+					tile: "tile"
+				}
+			}]
 		});
+		switchboardMap.addToWorld(world);
 
-		Mediator.subscribe('addToScene', addObject);
-		Mediator.subscribe('removeFromScene', removeObject);
+		// Mediator.subscribe('addToScene', addObject);
+		// Mediator.subscribe('removeFromScene', removeObject);
 	}
 
 	function initControls() {
@@ -457,8 +597,8 @@
 	}
 
 	function init() {
-		initScene();
 		initVizi();
+		initScene();
 		initControls();
 
 		resize();
