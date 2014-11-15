@@ -1,7 +1,7 @@
 (function () {
 	var initialCameraPosition = {
 			x: 0,
-			y: 130,
+			y: 230,
 			z: 0
 		},
 
@@ -387,7 +387,7 @@
 		var world = new VIZI.World({
 			viewport: document.body,
 			center: new VIZI.LatLon(START_LAT, START_LON),
-			zoom: 19,
+			//zoom: 19,
 			suppressRenderer: true
 		});
 
