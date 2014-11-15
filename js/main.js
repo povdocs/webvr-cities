@@ -179,7 +179,6 @@
 
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
-		//renderer.setSize(width, height);
 		renderer.setSize(width / devicePixelRatio, height / devicePixelRatio);
 
 		depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
