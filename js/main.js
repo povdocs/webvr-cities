@@ -1,7 +1,7 @@
 (function () {
 	var initialCameraPosition = {
 			x: 0,
-			y: 230,
+			y: 130,
 			z: 0
 		},
 
@@ -10,8 +10,8 @@
 		START_LAT = 40.7564812,
 		START_LON = -73.9861832,
 
-		// START_LON = -77.03674468051466,
-		// START_LAT = 38.89854112150404,
+		// START_LAT = 56.046467,
+		// START_LON = 12.694512,
 
 		FOG = 250,
 		MOVE_SPEED = 130,
@@ -298,39 +298,21 @@
 		floor.rotation.x = - 90 * Math.PI / 180;
 		floor.name = 'floor';
 		floorContainer.add(floor);
-		scene.add(floorContainer);
+		//scene.add(floorContainer);
 
 		/*
-		var directionalLight = new THREE.DirectionalLight( 0x999999 );
-		directionalLight.intesity = 0.1;
-		THREE.ColorConverter.setHSV( directionalLight.color, 0.1, 0.1, 0.55 );
-		directionalLight.position.x = 1;
-		directionalLight.position.y = 1;
-		directionalLight.position.z = 1;
-		scene.add(directionalLight);
-
-			var directionalLight2 = new THREE.DirectionalLight( 0x999999 );
-			directionalLight2.intesity = 0.1;
-			// THREE.ColorConverter.setHSV( directionalLight2.color, 0.1, 0.1, 0.5 );
-			directionalLight2.position.x = -1;
-			directionalLight2.position.y = 1;
-			directionalLight2.position.z = -1;
-			scene.add(directionalLight2);
-			*/
-
-			/*
 		var loader = new THREE.OBJMTLLoader();
 		loader.load( 'Godzilla/Godzilla.obj', 'Godzilla/Godzilla.mtl', function ( object ) {
 			//recenterCompoundObject(object);
 			object.position.z = -400;
-			object.position.x = 1000;
-			object.scale.multiplyScalar(4 * CITY_SCALE);
+			object.position.x = 200;
+			object.scale.multiplyScalar(1 / 8 * CITY_SCALE);
 			//object.rotateY(Math.PI);
 			scene.add( object );
 			//objects.push(object);
 			//pickTargets.push(object);
 		});
-		*/
+		//*/
 
 		// Gamma settings make things look 'nicer' for some reason
 		renderer.gammaInput = true;
@@ -408,7 +390,7 @@
 				options: {
 					grids: [{
 						zoom: 15,
-						tilesPerDirection: 1,
+						tilesPerDirection: 2,
 						cullZoom: 13
 					}],
 					workerURL: "js/lib/vizi-worker.js"
@@ -457,6 +439,7 @@
 		});
 		switchboardBuildings.addToWorld(world);
 
+		//*
 		var switchboardMap = new VIZI.BlueprintSwitchboard({
 			input: {
 				type: "BlueprintInputMapTiles",
@@ -532,6 +515,7 @@
 			}]
 		});
 		switchboardMap.addToWorld(world);
+		//c*/
 
 		// Mediator.subscribe('addToScene', addObject);
 		// Mediator.subscribe('removeFromScene', removeObject);
@@ -610,7 +594,7 @@
 
 		//todo: set up button to trigger full screen
 		window.addEventListener('keydown', function (evt) {
-			console.log('keydown', evt.keyCode);
+			//console.log('keydown', evt.keyCode);
 			if (evt.keyCode === 38) { //up
 				keys.forward = true;
 				startMoving();
