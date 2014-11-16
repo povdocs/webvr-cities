@@ -202,6 +202,8 @@
 		walkControl.update();
 		if (!walkControl.moving()) {
 			updatePosition();
+		} else {
+			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
 		scene.overrideMaterial = depthMaterial;
@@ -532,6 +534,7 @@
 			}
 		}
 
+		console.log('Waiting to register peer');
 		walkControl = new THREE.RemoteWalkControl(body, {
 			peerApiKey: PEER_API_KEY,
 			camera: camera,
@@ -562,6 +565,8 @@
 			} else {
 				qrCode.makeImage(url);
 			}
+
+			console.log('peer registered');
 		});
 
 		walkControl.addEventListener('connected', function () {
