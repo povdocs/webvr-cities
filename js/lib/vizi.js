@@ -6783,6 +6783,7 @@ if (typeof window === undefined) {
   VIZI.CRS = {
     code: undefined,
     tileSize: 256,
+    projection: undefined,
 
     // Project WGS84 coordinates into pixel positions
     // TODO: Project non-EPSG:3857 CRS into EPSG:3857 for pixel coords
@@ -6935,13 +6936,19 @@ if (typeof window === undefined) {
     // Convert WGS84 coordinates into CRS
     project: function(latLon) {
       var self = this;
-      return proj4(self.code, [latLon.lon, latLon.lat]);
+      if (!self.projection) {
+        self.projection = new proj4.Proj(self.code);
+      }
+      return proj4(self.projection, [latLon.lon, latLon.lat]);
     },
 
     // Convert CRS into WGS84 coordinates
     unproject: function(point) {
       var self = this;
-      return proj4(self.code).inverse([point.x, point.y]);
+      if (!self.projection) {
+        self.projection = new proj4.Proj(self.code);
+      }
+      return proj4(self.projection).inverse([point.x, point.y]);
     },
 
     // Map resolution (meters per pixel) for a given zoom
