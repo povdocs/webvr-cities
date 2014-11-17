@@ -74,7 +74,7 @@ THREE.VRControls = function ( object, options ) {
 
 		if ( sensorDevice ) {
 			vrState = sensorDevice.getState();
-			if ( vrState ) {
+			if ( vrState && vrState.orientation ) {
 				object.quaternion.copy( vrState.orientation );
 				object.position.copy( vrState.position );
 				object.updateMatrixWorld();
