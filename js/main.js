@@ -621,7 +621,7 @@
 						mesh = new THREE.Mesh(
 							incomeGeo,
 							new THREE.MeshBasicMaterial({
-								opacity: 0.6
+								opacity: 0.4
 							})
 						);
 						scene.add(mesh);
@@ -659,9 +659,34 @@
 		incomeData.update(START_LAT, START_LON);
 	}
 
+	function parseQuery() {
+		var search = window.location.search.substr(1),
+			queries = search.split('&'),
+			hash;
+		hash = queries.reduce(function (previous, current) {
+			var split = current.split('='),
+				key = split[0],
+				val = split[1],
+				num = parseFloat(val);
+
+			previous[key] = isNaN(num) ? val : num;
+
+			return previous;
+		}, {});
+
+		if (hash.height) {
+			initialCameraPosition.y = hash.height;
+		}
+
+		if (hash.speed > 0) {
+			MOVE_SPEED = hash.speed;
+		}
+	}
+
 	function init() {
 		var locationCache = {};
 
+		parseQuery();
 		initIncomeData();
 		initVizi();
 		initScene();
