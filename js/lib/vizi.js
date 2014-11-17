@@ -8923,9 +8923,26 @@ if (typeof window === undefined) {
     grid.on("moved", function(tiles, diff) {
       if (VIZI.DEBUG) console.log("Grid moved", tiles, diff);
 
+      var oldImages = gridOutput.images;
+      var newTiles = [];
+      gridOutput.images = {};
+      tiles.forEach(function (tile) {
+        var key = tile.x + '/' + tile.y;
+        if (oldImages.hasOwnProperty(key)) {
+          gridOutput.images[key] = oldImages[key];
+          delete oldImages[key];
+        } else {
+          newTiles.push(tile);
+        }
+      });
+
       // Wipe canvas
       // TODO: This is pretty brutish and a better method for nice visuals (no snapping and wrong tiles) when moving should be found
       gridOutput.context.clearRect(0, 0, gridOutput.canvas.width, gridOutput.canvas.height);
+
+      _.forEach(gridOutput.images, function (hash) {
+        self.outputImageTile(hash.image, hash.tile);
+      });
 
       // Force an update so old tiles aren't shown briefly
       gridOutput.mesh.material.needsUpdate = true;
@@ -8946,7 +8963,7 @@ if (typeof window === undefined) {
 
       // Only emit update event if grid is enabled
       if (!grid.disable) {
-        self.emit("gridUpdated", tiles);
+        self.emit("gridUpdated", newTiles);
       }
     });
 
@@ -9057,6 +9074,7 @@ if (typeof window === undefined) {
     output.canvasSizeDiff = canvasSizeDiff;
     output.context = tileCanvasContext;
     output.mesh = gridMesh;
+    output.images = {};
 
     return output;
   };
@@ -9089,6 +9107,12 @@ if (typeof window === undefined) {
       context.lineWidth = 5;
       context.strokeRect(imagePos[0], imagePos[1], 256, 256);
     }
+
+    var key = tile.x + '/' + tile.y;
+    gridHash.images[key] = {
+      image: image,
+      tile: tile
+    };
 
     gridHash.mesh.material.needsUpdate = true;
     gridHash.mesh.material.map.needsUpdate = true;
