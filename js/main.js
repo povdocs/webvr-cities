@@ -74,6 +74,7 @@
 		vrButton = document.getElementById('vr'),
 		infobutton = document.getElementById('infobutton'),
 		info = document.getElementById('info'),
+		searchbutton = document.getElementById('search'),
 
 		clock = new THREE.Clock();
 
@@ -383,6 +384,7 @@
 		});
 
 		scene = viziWorld.scene.scene;
+		scene.matrixAutoUpdate = false;
 		camera = viziWorld.camera.camera;
 		camera.position.set(0, 0, 0);
 		camera.rotation.set(0, 0, 0);
@@ -658,6 +660,8 @@
 	}
 
 	function init() {
+		var locationCache = {};
+
 		initIncomeData();
 		initVizi();
 		initScene();
@@ -673,6 +677,11 @@
 		//todo: set up button to trigger full screen
 		window.addEventListener('keydown', function (evt) {
 			//console.log('keydown', evt.keyCode);
+
+			if (evt.target instanceof HTMLInputElement) {
+				return;
+			}
+
 			if (evt.keyCode === 38) { //up
 				keys.forward = true;
 				startMoving();
@@ -747,6 +756,45 @@
 				info.className = '';
 			} else {
 				info.className = 'open';
+			}
+		});
+
+		searchbutton.addEventListener('click', function () {
+			function changeLocation(loc) {
+				var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
+					pos = viziWorld.project(latLng);
+				viziWorld.moveToLatLon(latLng);
+				body.position.x = pos.x;
+				body.position.z = pos.y;
+			}
+
+			var val = document.getElementById('location').value,
+				url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
+				loc;
+
+			if (val) {
+				loc = locationCache[val];
+				if (loc) {
+					changeLocation(loc);
+					return;
+				}
+				if (loc === null) {
+					//query in progress
+					return;
+				}
+
+				locationCache[val] = null;
+				d3.json(url + val, function(error, response) {
+					if (error) {
+						console.warn('Location search failed', val, error);
+						return;
+					}
+
+					if (response && response[0] && response[0].lat && response[0].lon) {
+						locationCache[val] = response[0];
+						changeLocation(locationCache[val]);
+					}
+				});
 			}
 		});
 	}
