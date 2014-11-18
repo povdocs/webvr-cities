@@ -245,40 +245,12 @@
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
 
-		//scene = new THREE.Scene();
-		//scene.fog = new THREE.Fog( 0xffffff, FOG * 0.9, FOG );
-
-		/*
-		octree = new THREE.Octree({
-			// uncomment below to see the octree (may kill the fps)
-			//scene: scene,
-			// when undeferred = true, objects are inserted immediately
-			// instead of being deferred until next octree.update() call
-			// this may decrease performance as it forces a matrix update
-			undeferred: true,
-			// set the max depth of tree
-			depthMax: Infinity,
-			// max number of objects before nodes split or merge
-			objectsThreshold: 8,
-			// percent between 0 and 1 that nodes will overlap each other
-			// helps insert objects that lie over more than one node
-			overlapPct: 0.15
-		});
-		*/
-
-		/*
-		cityContainer = new THREE.Object3D();
-		cityContainer.scale.multiplyScalar(CITY_SCALE);
-		scene.add(cityContainer);
-		*/
-
 		body = new THREE.Object3D();
 		body.position.x = initialCameraPosition.x;
 		body.position.y = initialCameraPosition.y;
 		body.position.z = initialCameraPosition.z;
 		scene.add(body);
 
-		//camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 2, 40000);
 		body.add(camera);
 
 		pointer = new THREE.Object3D();
@@ -296,16 +268,6 @@
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
-
-		floorContainer = new THREE.Object3D();
-		var floorGeom = new THREE.CircleGeometry(20000, 32);
-		var floorMat = new THREE.MeshBasicMaterial({color: 0xf8f8f8});
-		var floor = new THREE.Mesh(floorGeom, floorMat);
-		floor.position.y = -0.4;
-		floor.rotation.x = - 90 * Math.PI / 180;
-		floor.name = 'floor';
-		floorContainer.add(floor);
-		//scene.add(floorContainer);
 
 		/*
 		var loader = new THREE.OBJMTLLoader();
@@ -340,20 +302,12 @@
 
 		// postprocessing
 
-		// depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-		// sceneTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-
 		ssaoEffect = new THREE.ShaderPass( THREE.SSAOShader );
 		ssaoEffect.uniforms.lumInfluence.value = 0.8;
-		// ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
-		// ssaoEffect.uniforms.tDepth.value = depthTarget;
-		// ssaoEffect.uniforms.size.value.set( window.innerWidth, window.innerHeight );
 		ssaoEffect.uniforms.cameraNear.value = camera.near;
 		ssaoEffect.uniforms.cameraFar.value = camera.far;
 		ssaoEffect.renderToScreen = true;
 		ssaoEffect.clear = true;
-
-		//ssaoEffect.uniforms.onlyAO.value = true;
 
 		vrEffect = new THREE.VRStereoEffect(renderer);
 		vrEffect.addEventListener('fullscreenchange', function () {
