@@ -34,7 +34,6 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
-		floorContainer,
 		incomeColumns = [],
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
@@ -158,8 +157,6 @@
 				if (!intersections.length) {
 					//*/
 					body.position.add(scratchVector);
-					floorContainer.position.x = body.position.x;
-					floorContainer.position.z = body.position.z;
 
 					scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
 
