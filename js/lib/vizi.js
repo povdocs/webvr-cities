@@ -8133,7 +8133,7 @@ if (typeof window === undefined) {
     });
 
     // Load buildings in a Web Worker
-    self.worker(self.world.origin, self.world.originZoom, buildings).then(function(result) {
+    self.worker(self.world.origin, self.world.originZoom, self.options, buildings).then(function(result) {
       var offset = result.offset;
 
       var geom = new THREE.BufferGeometry();
@@ -8253,7 +8253,7 @@ if (typeof window === undefined) {
 
   // TODO: Is this running before the Blueprint is initialised and taking up unnecessary memory?
   // TODO: Find a better way to replicate World state (origin, origin zoom, CRS, etc) so it doesn't have to be duplicated for every Blueprint
-  VIZI.BlueprintOutputBuildingTiles.prototype.outputBuildingTileWorker = function(origin, originZoom, buildings) {
+  VIZI.BlueprintOutputBuildingTiles.prototype.outputBuildingTileWorker = function(origin, originZoom, options, buildings) {
     var self = this;
     var deferred = self.deferred();
 
@@ -8335,6 +8335,16 @@ if (typeof window === undefined) {
       
       var geom = new THREE.ExtrudeGeometry( shape, extrudeSettings );
       geom.computeFaceNormals();
+
+      if (!minHeight && !options.preserveFloors) {
+        // Remove down-facing floor faces
+        for (var i = geom.faces.length - 1; i >= 0; i--) {
+          if (geom.faces[i].normal.z === 1) {
+            geom.faces.splice(i, 1);
+            geom.faceVertexUvs[0].splice(i, 1);
+          }
+        }
+      }
       
       var mesh = new THREE.Mesh(geom);
 
