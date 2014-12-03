@@ -25,6 +25,7 @@
 		// Three.js stuff
 		camera,
 		body,
+		userBase,
 		pointer,
 		compass,
 		scene,
@@ -75,6 +76,7 @@
 		info = document.getElementById('info'),
 		searchbutton = document.getElementById('search'),
 
+		lastTick = 0,
 		clock = new THREE.Clock();
 
 	function startMoving() {
@@ -208,6 +210,8 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
+		userBase.rotation.z += (0.1 * Math.PI) * (tick - lastTick) / 1000;
+
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
 
@@ -242,11 +246,15 @@
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
 
+		userBase = new THREE.Object3D();
+		//userBase.rotation.z = 1 / 3;
+		scene.add(userBase);
+
 		body = new THREE.Object3D();
 		body.position.x = initialCameraPosition.x;
 		body.position.y = initialCameraPosition.y;
 		body.position.z = initialCameraPosition.z;
-		scene.add(body);
+		userBase.add(body);
 
 		body.add(camera);
 
