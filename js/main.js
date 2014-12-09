@@ -77,6 +77,7 @@
 		searchbutton = document.getElementById('search'),
 
 		lastTick = 0,
+		stats,
 		clock = new THREE.Clock();
 
 	function startMoving() {
@@ -221,6 +222,8 @@
 		ssaoEffect.render(renderer, null, sceneTarget);
 
 		lastTick = tick;
+
+		stats.update();
 
 		requestAnimationFrame( render );
 	}
@@ -421,35 +424,37 @@
 			output: {
 				type: "BlueprintOutputImageTiles",
 				options: {
-					grids: [{
-						zoom: 19,
-						tilesPerDirection: 3,
-						cullZoom: 17
-					}, {
-						zoom: 18,
-						tilesPerDirection: 3,
-						cullZoom: 16
-					}, {
-						zoom: 17,
-						tilesPerDirection: 3,
-						cullZoom: 15
-					}, {
-						zoom: 16,
-						tilesPerDirection: 3,
-						cullZoom: 14
-					}, {
-						zoom: 15,
-						tilesPerDirection: 3,
-						cullZoom: 13
-					}, {
-						zoom: 14,
-						tilesPerDirection: 3,
-						cullZoom: 12
-					}, {
-						zoom: 13,
-						tilesPerDirection: 5,
-						cullZoom: 11
-					}]
+					grids: [
+						{
+							zoom: 19,
+							tilesPerDirection: 3,
+							cullZoom: 17
+						// }, {
+						// 	zoom: 18,
+						// 	tilesPerDirection: 3,
+						// 	cullZoom: 16
+						}, {
+							zoom: 17,
+							tilesPerDirection: 3,
+							cullZoom: 15
+						// }, {
+						// 	zoom: 16,
+						// 	tilesPerDirection: 3,
+						// 	cullZoom: 14
+						}, {
+							zoom: 15,
+							tilesPerDirection: 3,
+							cullZoom: 13
+						// }, {
+						// 	zoom: 14,
+						// 	tilesPerDirection: 3,
+						// 	cullZoom: 12
+						}, {
+							zoom: 13,
+							tilesPerDirection: 5,
+							cullZoom: 11
+						}
+					]
 				}
 			},
 			triggers: [{
@@ -651,6 +656,12 @@
 		initVizi();
 		initScene();
 		initControls();
+
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		stats.domElement.style.right = '0px';
+		document.body.appendChild( stats.domElement );
 
 		resize();
 		window.addEventListener('resize', resize, false);
