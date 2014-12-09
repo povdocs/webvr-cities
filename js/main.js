@@ -77,6 +77,7 @@
 		searchbutton = document.getElementById('search'),
 
 		lastTick = 0,
+
 		stats,
 		clock = new THREE.Clock();
 
@@ -211,7 +212,9 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
-		userBase.rotation.z += (0.1 * Math.PI) * (tick - lastTick) / 1000;
+		if (userBase.rotation.z) {
+			userBase.rotation.z = Math.max(0, userBase.rotation.z - (2 * Math.PI) * (tick - lastTick) / 2000);
+		}
 
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
@@ -739,7 +742,7 @@
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = false;
 			} else if (evt.keyCode === 32) { //space
-				//vrMouse.center();
+				userBase.rotation.z = 2 * Math.PI;
 			}
 		}, false);
 
