@@ -8929,25 +8929,26 @@ if (typeof window === undefined) {
       gridOutput.images = {};
       tiles.forEach(function (tile) {
         var key = tile.x + '/' + tile.y;
+
+        var localCoords = grid.globalToLocalTiles(tile.x, tile.y);
+        var materialIndex = localCoords.y * grid.tileCount.x + localCoords.x;
+        var material = gridOutput.materials[materialIndex];
+
         if (oldImages.hasOwnProperty(key)) {
+          // we're still going to work with this image
+          material.map = oldImages[key].texture;
           gridOutput.images[key] = oldImages[key];
           delete oldImages[key];
         } else {
+          //this is a new one
+          material.map = null;
+          material.opacity = 0;
           newTiles.push(tile);
         }
+
+        // Force an update so old tiles aren't shown briefly
+        material.needsUpdate = true;
       });
-
-      // Wipe canvas
-      // TODO: This is pretty brutish and a better method for nice visuals (no snapping and wrong tiles) when moving should be found
-      gridOutput.context.clearRect(0, 0, gridOutput.canvas.width, gridOutput.canvas.height);
-
-      _.forEach(gridOutput.images, function (hash) {
-        self.outputImageTile(hash.image, hash.tile);
-      });
-
-      // Force an update so old tiles aren't shown briefly
-      gridOutput.mesh.material.needsUpdate = true;
-      gridOutput.mesh.material.map.needsUpdate = true;
 
       // TODO: This whole tile size calculation probably only needs doing once
       var geoBounds = {
@@ -8973,7 +8974,7 @@ if (typeof window === undefined) {
 
       gridOutput.mesh.visible = false;
     });
-    
+
     grid.on("enabled", function() {
       if (VIZI.DEBUG) console.log("Grid enabled");
 
@@ -9001,45 +9002,18 @@ if (typeof window === undefined) {
   VIZI.BlueprintOutputImageTiles.prototype.createGridObject = function(grid, output) {
     var self = this;
 
-    // Create grid canvas
-    var tileCanvas = document.createElement("canvas");
+    var materials = [];
 
-    var canvasSize = grid.tileCount.x * 256;
-
-    // Scale canvas to next power of 2 (for mipmap)
-    var canvasSizePower2 = Math.pow(2, Math.ceil(Math.log(canvasSize) / Math.log(2)));
-
-    // Canvas size difference
-    var canvasSizeDiff = canvasSizePower2 / canvasSize;
-
-    tileCanvas.width = canvasSizePower2;
-    tileCanvas.height = canvasSizePower2;
-
-    if (VIZI.DEBUG) console.log(tileCanvas.width, tileCanvas.height);
-
-    var tileCanvasContext = tileCanvas.getContext("2d");
-
-    // Create grid meshes and apply empty canvas materials (until tiles come through)
-    var texture = new THREE.Texture(tileCanvas);
-    // texture.minFilter = texture.magFilter = THREE.LinearFilter;
-
-    // Silky smooth images when tilted
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearMipMapLinearFilter;
-
-    // TODO: Set this to renderer.getMaxAnisotropy() / 4
-    texture.anisotropy = 4;
-
-    var material = new THREE.MeshBasicMaterial({
-      // color: 0x00FF00,
-      map: texture,
-      depthWrite: false,
-      transparent: true
-    });
-
-    // Update material otherwise canvas shows up black
-    material.needsUpdate = true;
-    material.map.needsUpdate = true;
+    for (var x = 0; x < grid.tileCount.x; x++) {
+      for (var y = 0; y < grid.tileCount.y; y++) {
+        materials.push(new THREE.MeshBasicMaterial({
+          // color: 0x00FF00,
+          // map: texture,
+          depthWrite: false,
+          transparent: true
+        }));
+      }
+    }
 
     var geoBounds = {
       ne: self.world.project(new VIZI.LatLon(grid.boundsLatLon.n, grid.boundsLatLon.e)),
@@ -9050,9 +9024,24 @@ if (typeof window === undefined) {
     // TODO: Work out if the tilesize not being a proper square for square-shaped bounding coordinates is a problem (eg. 4825.486315913922, 4825.486315915361)
     var size = [Math.abs(geoBounds.ne.x - geoBounds.sw.x), Math.abs(geoBounds.ne.y - geoBounds.sw.y)];
 
-    var geom = new THREE.PlaneBufferGeometry(size[0], size[1], 1, 1);
+    var xSize = size[0] / grid.tileCount.x;
+    var ySize = size[1] / grid.tileCount.y;
+    var geom = new THREE.PlaneBufferGeometry(xSize, ySize, 1, 1);
 
-    var gridMesh = new THREE.Mesh(geom, material);
+    var gridMesh = new THREE.Object3D();
+
+    var meshes = [];
+    for (var y = 0; y < grid.tileCount.y; y++) {
+      for (var x = 0; x < grid.tileCount.x; x++) {
+        var mesh = new THREE.Mesh(geom, materials[meshes.length]);
+        mesh.position.x = (x - grid.tileCount.x / 2 + 0.5) * xSize;
+        mesh.position.y = -(y - grid.tileCount.y / 2 + 0.5) * ySize;
+        mesh.renderDepth = grid.tileZoom * -1;
+        //mesh.rotation.x = -90 * Math.PI / 180;
+        gridMesh.add(mesh);
+        meshes.push(mesh);
+      }
+    }
 
     // Hacky method for forcing render depth / layers using tile zoom
     gridMesh.renderDepth = grid.tileZoom * -1;
@@ -9071,10 +9060,8 @@ if (typeof window === undefined) {
     // TODO: Make sure coordinate space is right
     self.add(gridMesh);
 
-    output.canvas = tileCanvas;
-    output.canvasSizeDiff = canvasSizeDiff;
-    output.context = tileCanvasContext;
     output.mesh = gridMesh;
+    output.materials = materials;
     output.images = {};
 
     return output;
@@ -9091,34 +9078,39 @@ if (typeof window === undefined) {
     // Find grid
     var gridHash = self.grids[tile.z];
 
-    // Retreive grid canvas context
-    var context = gridHash.context;
-
-    // Sizing factor caused by power of 2 canvas dimensions
-    var canvasSizeDiff = gridHash.canvasSizeDiff;
-
     var localCoords = gridHash.grid.globalToLocalTiles(tile.x, tile.y);
-    var imagePos = [(localCoords.x * 256) * canvasSizeDiff, (localCoords.y * 256) * canvasSizeDiff];
+    var materialIndex = localCoords.y * gridHash.grid.tileCount.x + localCoords.x;
+    var material = gridHash.materials[materialIndex];
 
-    // Update canvas with tile
-    context.drawImage(image, imagePos[0], imagePos[1], 256 * canvasSizeDiff, 256 * canvasSizeDiff);
+    var texture = new THREE.Texture(image);
+    // texture.minFilter = texture.magFilter = THREE.LinearFilter;
 
+    // Silky smooth images when tilted
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+
+    // TODO: Set this to renderer.getMaxAnisotropy() / 4
+    texture.anisotropy = 4;
+    //texture.flipY = true;
+    texture.needsUpdate = true;
+
+    material.map = texture;
+    material.opacity = 1;
+    material.needsUpdate = true;
+
+    /*
     if (self.debug) {
       context.strokeStyle = "#ff0000";
       context.lineWidth = 5;
       context.strokeRect(imagePos[0], imagePos[1], 256, 256);
     }
+    */
 
     var key = tile.x + '/' + tile.y;
     gridHash.images[key] = {
-      image: image,
+      texture: texture,
       tile: tile
     };
-
-    gridHash.mesh.material.needsUpdate = true;
-    gridHash.mesh.material.map.needsUpdate = true;
-    
-    // if (VIZI.DEBUG) console.log("Output tile", image, tile);
   };
 
   VIZI.BlueprintOutputImageTiles.prototype.onAdd = function(world) {
