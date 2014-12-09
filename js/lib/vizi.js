@@ -9080,6 +9080,12 @@ if (typeof window === undefined) {
 
     var localCoords = gridHash.grid.globalToLocalTiles(tile.x, tile.y);
     var materialIndex = localCoords.y * gridHash.grid.tileCount.x + localCoords.x;
+
+    if (materialIndex < 0 || materialIndex >= gridHash.materials.length) {
+      // This is probably an old image loading late
+      return;
+    }
+
     var material = gridHash.materials[materialIndex];
 
     var texture = new THREE.Texture(image);
