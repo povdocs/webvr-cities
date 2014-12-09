@@ -75,6 +75,7 @@
 		info = document.getElementById('info'),
 		searchbutton = document.getElementById('search'),
 
+		stats,
 		clock = new THREE.Clock();
 
 	function startMoving() {
@@ -217,6 +218,8 @@
 		ssaoEffect.render(renderer, null, sceneTarget);
 
 		lastTick = tick;
+
+		stats.update();
 
 		requestAnimationFrame( render );
 	}
@@ -643,6 +646,12 @@
 		initVizi();
 		initScene();
 		initControls();
+
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		stats.domElement.style.right = '0px';
+		document.body.appendChild( stats.domElement );
 
 		resize();
 		window.addEventListener('resize', resize, false);
