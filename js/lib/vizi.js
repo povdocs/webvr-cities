@@ -7909,13 +7909,14 @@ if (typeof window === undefined) {
 
   // TODO: Pull from cache if available
   // TODO: Cache a certain amount of tiles
+  var tileURLRegex = /\{([zxy])\}/g;
   VIZI.BlueprintInputMapTiles.prototype.requestTiles = function(tiles) {
     var self = this;
 
     if (VIZI.DEBUG) console.log("Requesting tiles", tiles);
 
     _.each(tiles, function(tile, key) {
-      var url = self.options.tilePath.replace(/\{([zxy])\}/g, function(value, key) {
+      var url = self.options.tilePath.replace(tileURLRegex, function(value, key) {
         // Replace with paramter, otherwise keep existing value
         return tile[key];
       });
