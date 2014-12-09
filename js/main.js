@@ -34,6 +34,9 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
+		sunSphere,
+		sunLight,
+		sky,
 		incomeColumns = [],
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
@@ -195,6 +198,38 @@
 		ssaoEffect.uniforms.size.value.set( width / 2, height );
 	}
 
+	function updateSun() {
+		//todo: use real lat/lon of current location
+		var time = new Date();
+		//midnight.setHours(0, 0, 0);
+		var dayFraction = (Date.now() % 20000) / 20000;
+		var hour = Math.floor(dayFraction * 24);
+		var min = 60 * ((dayFraction * 24) % 1);
+		time.setHours(hour, min, 0);
+
+		//var now = new Date(midnight.getTime() + (Date.now() % 5000) / 5000 * 60 * 60 * 24);
+		//var now = new Date(Date.now() * 1000);
+		//now.setTime(midnight.getTime() + (Date.now() % 20000) / 20000 * 60 * 60 * 24);
+
+		//time = new Date();
+
+		var sun = SunCalc.getPosition(time, START_LAT, START_LON);
+
+		//calculate position of sun
+		var distance = 40000;
+		var theta = sun.altitude;
+		var phi = sun.azimuth + Math.PI / 2;
+
+		sunSphere.position.y = distance * Math.sin(theta);
+		sunSphere.position.x = distance * Math.cos(theta) * Math.cos(phi);
+		sunSphere.position.z = distance * Math.cos(theta) * Math.sin(phi);
+
+		sky.uniforms.sunPosition.value.copy(sunSphere.position);
+
+		sunLight.position.copy(sunSphere.position);
+		sunLight.position.multiplyScalar( 50 );
+	}
+
 	function render() {
 		var tick = Date.now();
 
@@ -208,6 +243,8 @@
 		} else {
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
+
+		updateSun();
 
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
@@ -244,6 +281,78 @@
 
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
+
+		//sky and lighting
+		sky = new THREE.Sky();
+		sky.mesh.scale.set(0.05, 0.05, 0.05);
+		scene.add( sky.mesh );
+
+		//*
+		for (var i = scene.children.length - 1; i>= 0; i--) {
+			if (scene.children[i] instanceof THREE.DirectionalLight) {
+				scene.remove(scene.children[i]);
+			}
+		}
+		//*/
+
+		sunSphere = new THREE.Mesh( new THREE.SphereGeometry( 2000, 30, 30 ),
+					new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: false }));
+		//sunSphere.position.y = -700000;
+		sunSphere.visible = true;
+		scene.add( sunSphere );
+
+		var effectController  = {
+			turbidity: 10,
+			reileigh: 2,
+			mieCoefficient: 0.005,
+			mieDirectionalG: 0.8,
+			luminance: 1,
+			inclination: 4, // elevation / inclination
+			azimuth: 236, // Facing front,
+			sun: !true
+		};
+
+		var uniforms = sky.uniforms;
+		uniforms.turbidity.value = effectController.turbidity;
+		uniforms.reileigh.value = effectController.reileigh;
+		uniforms.luminance.value = effectController.luminance;
+		uniforms.mieCoefficient.value = effectController.mieCoefficient;
+		uniforms.mieDirectionalG.value = effectController.mieDirectionalG;
+
+		sunSphere.visible = effectController.sun;
+
+		/*
+		var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+		hemiLight.color.setHSL( 0.6, 1, 0.6 );
+		hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+		hemiLight.position.copy(sunSphere.position);
+		//scene.add( hemiLight );
+	*/
+		//
+
+		sunLight = new THREE.DirectionalLight( 0xffffff, 1 );
+		sunLight.color.setHSL( 0.1, 1, 0.95 );
+		sunLight.position.copy(sunSphere.position);
+		sunLight.position.multiplyScalar( 50 );
+		scene.add( sunLight );
+
+		sunLight.castShadow = true;
+
+		sunLight.shadowMapWidth = 2048;
+		sunLight.shadowMapHeight = 2048;
+
+		var d = 50;
+
+		sunLight.shadowCameraLeft = -d;
+		sunLight.shadowCameraRight = d;
+		sunLight.shadowCameraTop = d;
+		sunLight.shadowCameraBottom = -d;
+
+		sunLight.shadowCameraFar = 3500;
+		sunLight.shadowBias = -0.0001;
+		sunLight.shadowDarkness = 0.35;
+		sunLight.shadowCameraVisible = true;
+		//*/
 
 		body = new THREE.Object3D();
 		body.position.x = initialCameraPosition.x;
@@ -411,6 +520,7 @@
 				type: "BlueprintInputMapTiles",
 				options: {
 					tilePath: "https://a.tiles.mapbox.com/v3/examples.map-i86l3621/{z}/{x}/{y}@2x.png"
+					//tilePath: 'http://otile1.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg'
 				}
 			},
 			output: {
