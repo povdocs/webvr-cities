@@ -336,7 +336,7 @@
 		sunLight.position.multiplyScalar( 50 );
 		scene.add( sunLight );
 
-		sunLight.castShadow = true;
+		//sunLight.castShadow = true;
 
 		sunLight.shadowMapWidth = 2048;
 		sunLight.shadowMapHeight = 2048;
