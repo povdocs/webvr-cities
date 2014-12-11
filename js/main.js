@@ -220,24 +220,6 @@
 		requestAnimationFrame( render );
 	}
 
-	/*
-	function addObject(object) {
-		cityContainer.add(object);
-		// octree.add(object, {
-		//		useFaces: true
-		// });
-		console.log('added', object);
-	}
-
-	function removeObject(object) {
-		cityContainer.remove(object);
-		// octree.remove(object, {
-		// 	useFaces: true
-		// });
-		console.log('removed', object);
-	}
-	*/
-
 	function initScene() {
 		renderer = new THREE.WebGLRenderer();
 
@@ -264,20 +246,6 @@
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
-
-		/*
-		var loader = new THREE.OBJMTLLoader();
-		loader.load( 'Godzilla/Godzilla.obj', 'Godzilla/Godzilla.mtl', function ( object ) {
-			//recenterCompoundObject(object);
-			object.position.z = -400;
-			object.position.x = 200;
-			object.scale.multiplyScalar(1 / 8 * CITY_SCALE);
-			//object.rotateY(Math.PI);
-			scene.add( object );
-			//objects.push(object);
-			//pickTargets.push(object);
-		});
-		//*/
 
 		// Gamma settings make things look 'nicer' for some reason
 		renderer.gammaInput = true;
@@ -480,9 +448,6 @@
 		});
 		switchboardMap.addToWorld(viziWorld);
 		//c*/
-
-		// Mediator.subscribe('addToScene', addObject);
-		// Mediator.subscribe('removeFromScene', removeObject);
 	}
 
 	function initControls() {
