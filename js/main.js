@@ -10,9 +10,6 @@
 		START_LAT = 40.7564812,
 		START_LON = -73.9861832,
 
-		MAX_INCOME_HEIGHT = 130,
-		MIN_INCOME_HEIGHT = 10,
-
 		// START_LAT = 56.046467,
 		// START_LON = 12.694512,
 
@@ -34,7 +31,6 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
-		incomeColumns = [],
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
 
@@ -551,71 +547,6 @@
 		walkControl.connect(window.location.hash.substr(1));
 	}
 
-	function initIncomeData() {
-		var incomeGeo,
-			minIncome = 0,
-			maxIncome = 0,
-			incomeRange = 0,
-			heightRange = MAX_INCOME_HEIGHT - MIN_INCOME_HEIGHT,
-			incomeData;
-
-		incomeData = new IncomeData({
-			tilesPerDirection: 4,
-			//path: 'data/testdata.csv',
-			onLoad: function () {
-				minIncome = incomeData.minIncome();
-				maxIncome = incomeData.maxIncome();
-				incomeRange = maxIncome - minIncome;
-			},
-			onUpdate: function (tracts) {
-				var max = 0;
-				tracts.forEach(function (tract, index) {
-					var mesh = incomeColumns[index],
-						amount,
-						point;
-
-					if (!mesh) {
-						mesh = new THREE.Mesh(
-							incomeGeo,
-							new THREE.MeshBasicMaterial({
-								opacity: 0.4
-							})
-						);
-						scene.add(mesh);
-						incomeColumns.push(mesh);
-					} else {
-						mesh.visible = true;
-					}
-
-					amount = (tract.income - minIncome) / incomeRange;
-					mesh.material.color.setHSL(amount / 3, 1, 0.5);
-
-					mesh.scale.y = MIN_INCOME_HEIGHT + amount * heightRange;
-
-					point = viziWorld.project(new VIZI.LatLon(tract.latitude, tract.longitude));
-					mesh.position.set(point.x, 0, point.y);
-
-					max = index;
-				});
-
-				while (max < incomeColumns.length) {
-					incomeColumns[max].visible = false;
-					max++;
-				}
-			}
-		});
-		incomeData.load();
-
-		incomeGeo = new THREE.CylinderGeometry(5, 5, 1, 8);
-		incomeGeo.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
-
-		VIZI.Messenger.on("world:updateView", function(center, zoom) {
-			incomeData.update(center.lat, center.lon);
-		});
-
-		incomeData.update(START_LAT, START_LON);
-	}
-
 	function parseQuery() {
 		var search = window.location.search.substr(1),
 			queries = search.split('&'),
@@ -644,7 +575,6 @@
 		var locationCache = {};
 
 		parseQuery();
-		initIncomeData();
 		initVizi();
 		initScene();
 		initControls();
