@@ -411,7 +411,47 @@
 	}
 
 	function init() {
-		var locationCache = {};
+		var locationCache = {},
+			locationInput = document.getElementById('location');
+
+		function searchLocation() {
+			function changeLocation(loc) {
+				var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
+					pos = viziWorld.project(latLng);
+				viziWorld.moveToLatLon(latLng);
+				body.position.x = pos.x;
+				body.position.z = pos.y;
+			}
+
+			var val = locationInput.value,
+				url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
+				loc;
+
+			if (val) {
+				loc = locationCache[val];
+				if (loc) {
+					changeLocation(loc);
+					return;
+				}
+				if (loc === null) {
+					//query in progress
+					return;
+				}
+
+				locationCache[val] = null;
+				d3.json(url + val, function(error, response) {
+					if (error) {
+						console.warn('Location search failed', val, error);
+						return;
+					}
+
+					if (response && response[0] && response[0].lat && response[0].lon) {
+						locationCache[val] = response[0];
+						changeLocation(locationCache[val]);
+					}
+				});
+			}
+		}
 
 		parseQuery();
 		initVizi();
@@ -516,42 +556,10 @@
 			}
 		});
 
-		searchbutton.addEventListener('click', function () {
-			function changeLocation(loc) {
-				var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
-					pos = viziWorld.project(latLng);
-				viziWorld.moveToLatLon(latLng);
-				body.position.x = pos.x;
-				body.position.z = pos.y;
-			}
-
-			var val = document.getElementById('location').value,
-				url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
-				loc;
-
-			if (val) {
-				loc = locationCache[val];
-				if (loc) {
-					changeLocation(loc);
-					return;
-				}
-				if (loc === null) {
-					//query in progress
-					return;
-				}
-
-				locationCache[val] = null;
-				d3.json(url + val, function(error, response) {
-					if (error) {
-						console.warn('Location search failed', val, error);
-						return;
-					}
-
-					if (response && response[0] && response[0].lat && response[0].lon) {
-						locationCache[val] = response[0];
-						changeLocation(locationCache[val]);
-					}
-				});
+		searchbutton.addEventListener('click', searchLocation);
+		locationInput.addEventListener('keypress', function (evt) {
+			if (evt.keyCode === 13) {
+				searchLocation();
 			}
 		});
 	}
