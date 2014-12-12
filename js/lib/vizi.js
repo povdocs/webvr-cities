@@ -8122,6 +8122,10 @@ if (typeof window === undefined) {
   VIZI.BlueprintOutputBuildingTiles.prototype.outputBuildingTile = function(buildings, tile) {
     var self = this;
 
+    if (!buildings.length) {
+        return;
+    }
+
     // Find grid
     var gridHash = self.grids[tile.z];
 
