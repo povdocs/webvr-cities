@@ -35,8 +35,8 @@
 
 			#controls {
 				position: absolute;
-				bottom: 20px;
-				left: 20px;
+				bottom: 44px;
+				/*left: 20px;*/
 				padding: 20px;
 				background-color: rgba(80, 80, 80, 0.6);
 				z-index: 2;
@@ -110,15 +110,27 @@
 				position: absolute;
 				width: 280px;
 				height: 280px;
-				bottom: 0;
+				bottom: 44px;
 				right: 0;
-				margin: 10px;
-				border: rgba(100, 100, 100, 0.6) solid 2px;
+				/*margin: 10px;*/
+				/*border: rgba(100, 100, 100, 0.6) solid 2px;*/
 			}
 
 			#qrcode {
 				padding: 40px;
 				background-color: white;
+			}
+
+			footer {
+				z-index: 1;
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				background-color: rgba(80, 80, 80, 0.6);
+				padding: 10px;
+				overflow: hidden;
+				height: 24px;
 			}
 
 		</style>
@@ -149,12 +161,15 @@
 			</svg>
 			<article>
 				<h1>WebVR 3D Map Experiment</h1>
-				<p>Code by <a href="http://chirls.com">Brian Chirls</a> is available on <a href="https://github.com/povdocs/webvr-mouse/">GitHub</a>.</p>
+				<p>Code by <a href="http://chirls.com">Brian Chirls</a> is available on <a href="https://github.com/povdocs/webvr-cities/">GitHub</a>.</p>
 			</article>
 		</div>
 		<div id="connection-info" style="display: none;">
 			<a id="link" target="_blank"><div id="qrcode"></div></a>
 		</div>
+		<footer>
+			<div id="location-name"></div>
+		</footer>
 		<script src="js/lib/vizi.js"></script>
 		<script src="js/lib/DeviceOrientationControls.js"></script>
 		<script src="js/lib/VRStereoEffect.js"></script>

@@ -7,11 +7,7 @@
 
 		PEER_API_KEY = 'evy8rcz8vdy22o6r',
 
-		START_LAT = 40.7564812,
-		START_LON = -73.9861832,
-
-		// START_LAT = 56.046467,
-		// START_LON = 12.694512,
+		START_LOCATION = 'Times Square, New York',
 
 		FOG = 250,
 		MOVE_SPEED = 80,
@@ -70,6 +66,8 @@
 		infobutton = document.getElementById('infobutton'),
 		info = document.getElementById('info'),
 		searchbutton = document.getElementById('search'),
+
+		locationCache = {},
 
 		stats,
 		clock = new THREE.Clock();
@@ -298,7 +296,7 @@
 
 		viziWorld = new VIZI.World({
 			viewport: document.body,
-			center: new VIZI.LatLon(START_LAT, START_LON),
+			//center: new VIZI.LatLon(START_LAT, START_LON),
 			//zoom: 19,
 			suppressRenderer: true
 		});
@@ -322,6 +320,55 @@
 				switchboard.addToWorld(viziWorld);
 			});
 		});
+	}
+
+	function searchLocation(val) {
+		var locationName = document.getElementById('location-name');
+
+		function changeLocation(loc) {
+			var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
+				pos = viziWorld.project(latLng);
+
+			viziWorld.moveToLatLon(latLng);
+			body.position.x = pos.x;
+			body.position.z = pos.y;
+
+			if (locationName.firstChild) {
+				locationName.firstChild.nodeValue = loc.display_name;
+			} else {
+				locationName.appendChild(document.createTextNode(loc.display_name));
+			}
+
+			//todo: update query param in URL
+		}
+
+		var url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
+			loc;
+
+		if (val) {
+			loc = locationCache[val];
+			if (loc) {
+				changeLocation(loc);
+				return;
+			}
+			if (loc === null) {
+				//query in progress
+				return;
+			}
+
+			locationCache[val] = null;
+			d3.json(url + val, function(error, response) {
+				if (error) {
+					console.warn('Location search failed', val, error);
+					return;
+				}
+
+				if (response && response[0] && response[0].lat && response[0].lon) {
+					locationCache[val] = response[0];
+					changeLocation(locationCache[val]);
+				}
+			});
+		}
 	}
 
 	function initControls() {
@@ -390,13 +437,17 @@
 		var search = window.location.search.substr(1),
 			queries = search.split('&'),
 			hash;
+
 		hash = queries.reduce(function (previous, current) {
 			var split = current.split('='),
 				key = split[0],
-				val = split[1],
-				num = parseFloat(val);
+				val = split[1];
 
-			previous[key] = isNaN(num) ? val : num;
+			if (/^\s*\-?\d+(\.\d+)?\s*$/.test(val)) {
+				previous[key] = parseFloat(val);
+			} else {
+				previous[key] = val;
+			}
 
 			return previous;
 		}, {});
@@ -408,50 +459,16 @@
 		if (hash.speed > 0) {
 			MOVE_SPEED = hash.speed;
 		}
+
+		if (hash.loc) {
+			searchLocation(hash.loc);
+		} else {
+			searchLocation(START_LOCATION);
+		}
 	}
 
 	function init() {
-		var locationCache = {},
-			locationInput = document.getElementById('location');
-
-		function searchLocation() {
-			function changeLocation(loc) {
-				var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
-					pos = viziWorld.project(latLng);
-				viziWorld.moveToLatLon(latLng);
-				body.position.x = pos.x;
-				body.position.z = pos.y;
-			}
-
-			var val = locationInput.value,
-				url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
-				loc;
-
-			if (val) {
-				loc = locationCache[val];
-				if (loc) {
-					changeLocation(loc);
-					return;
-				}
-				if (loc === null) {
-					//query in progress
-					return;
-				}
-
-				locationCache[val] = null;
-				d3.json(url + val, function(error, response) {
-					if (error) {
-						console.warn('Location search failed', val, error);
-						return;
-					}
-
-					if (response && response[0] && response[0].lat && response[0].lon) {
-						locationCache[val] = response[0];
-						changeLocation(locationCache[val]);
-					}
-				});
-			}
-		}
+		var locationInput = document.getElementById('location');
 
 		parseQuery();
 		initVizi();
@@ -556,10 +573,12 @@
 			}
 		});
 
-		searchbutton.addEventListener('click', searchLocation);
+		searchbutton.addEventListener('click', function () {
+			searchLocation(locationInput.value);
+		});
 		locationInput.addEventListener('keypress', function (evt) {
 			if (evt.keyCode === 13) {
-				searchLocation();
+				searchLocation(locationInput.value);
 			}
 		});
 	}
