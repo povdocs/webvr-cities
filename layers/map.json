@@ -1,0 +1,64 @@
+{
+	"input": {
+		"type": "BlueprintInputMapTiles",
+		"options": {
+			"tilePath": "https://a.tiles.mapbox.com/v3/examples.map-i86l3621/{z}/{x}/{y}@2x.png"
+		}
+	},
+	"output": {
+		"type": "BlueprintOutputImageTiles",
+		"options": {
+			"grids": [
+				{
+					"zoom": 19,
+					"tilesPerDirection": 3,
+					"cullZoom": 17
+				}, {
+					"zoom": 17,
+					"tilesPerDirection": 3,
+					"cullZoom": 15
+				}, {
+					"zoom": 15,
+					"tilesPerDirection": 3,
+					"cullZoom": 13
+				}, {
+					"zoom": 13,
+					"tilesPerDirection": 5,
+					"cullZoom": 11
+				}
+			]
+		}
+	},
+	"triggers": [{
+		"triggerObject": "output",
+		"triggerName": "initialised",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "output",
+		"triggerName": "gridUpdated",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "input",
+		"triggerName": "tileReceived",
+		"triggerArguments": ["image", "tile"],
+		"actionObject": "output",
+		"actionName": "outputImageTile",
+		"actionArguments": ["image", "tile"],
+		"actionOutput": {
+			"image": "image",
+			"tile": "tile"
+		}
+	}]
+}
