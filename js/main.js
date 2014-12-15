@@ -62,6 +62,7 @@
 
 		pickTargets = [],
 
+		fsButton = document.getElementById('fs'),
 		vrButton = document.getElementById('vr'),
 		infobutton = document.getElementById('infobutton'),
 		info = document.getElementById('info'),
@@ -486,6 +487,17 @@
 
 		vrButton.addEventListener('click', function () {
 			vrEffect.requestFullScreen();
+		}, false);
+
+		fsButton.addEventListener('click', function () {
+			var fullScreenElement = renderer.domElement,
+				requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
+					fullScreenElement.mozRequestFullScreen ||
+					fullScreenElement.msRequestFullscreen;
+
+			if (requestFullscreen) {
+				requestFullscreen.call(fullScreenElement);
+			}
 		}, false);
 
 		//todo: set up button to trigger full screen
