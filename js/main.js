@@ -273,6 +273,8 @@
 		ssaoEffect.clear = true;
 
 		vrEffect = new THREE.VRStereoEffect(renderer);
+		vrEffect.near = 1;
+		vrEffect.far = 40000;
 		vrEffect.addEventListener('fullscreenchange', function () {
 			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview());
 			if (vrControls.freeze) {
@@ -297,7 +299,7 @@
 
 		viziWorld = new VIZI.World({
 			viewport: document.body,
-			//center: new VIZI.LatLon(START_LAT, START_LON),
+			center: new VIZI.LatLon(40.7564812, -73.9861832),
 			//zoom: 19,
 			suppressRenderer: true
 		});
