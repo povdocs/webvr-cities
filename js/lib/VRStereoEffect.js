@@ -21,6 +21,9 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 	var cameraLeft = new THREE.PerspectiveCamera();
 	var cameraRight = new THREE.PerspectiveCamera();
 
+	var near = 2;
+	var far = 40000;
+
 	var requestFullscreen;
 	var fullScreenParam = {
 		vrDisplay: null
@@ -127,8 +130,8 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 			fovRight = hmdDevice.getRecommendedEyeFieldOfView('right');
 		}
 
-		cameraLeft.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovLeft, 2, 40000);
-		cameraRight.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovRight, 2, 40000);
+		cameraLeft.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovLeft, near, far);
+		cameraRight.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovRight, near, far);
 	}
 
 	function gotVRDevices(devices) {
@@ -344,6 +347,32 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 		renderer.setScissor( 0, 0, w, h );
 		renderer.enableScissorTest( false );
 	};
+
+	Object.defineProperty(this, 'near', {
+		get: function () {
+			return near;
+		},
+		set: function (val) {
+			val = parseFloat(val);
+			if (val && !isNaN(val)) {
+				near = Math.max(0, val);
+				resizeFOV(0);
+			}
+		}
+	});
+
+	Object.defineProperty(this, 'far', {
+		get: function () {
+			return far;
+		},
+		set: function (val) {
+			val = parseFloat(val);
+			if (val && !isNaN(val)) {
+				far = Math.max(0, val);
+				resizeFOV(0);
+			}
+		}
+	});
 
 	this.scan();
 	resize();

@@ -273,6 +273,8 @@
 		ssaoEffect.clear = true;
 
 		vrEffect = new THREE.VRStereoEffect(renderer);
+		vrEffect.near = 1;
+		vrEffect.far = 40000;
 		vrEffect.addEventListener('fullscreenchange', function () {
 			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview());
 			if (vrControls.freeze) {
