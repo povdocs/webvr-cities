@@ -299,7 +299,7 @@
 
 		viziWorld = new VIZI.World({
 			viewport: document.body,
-			//center: new VIZI.LatLon(START_LAT, START_LON),
+			center: new VIZI.LatLon(40.7564812, -73.9861832),
 			//zoom: 19,
 			suppressRenderer: true
 		});
