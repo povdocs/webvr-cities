@@ -470,12 +470,15 @@
 			return previous;
 		}, {});
 
-		if (hash.height) {
-			initialCameraPosition.y = hash.height;
-		}
-
 		if (hash.speed > 0) {
 			MOVE_SPEED = hash.speed;
+			SLOW_SPEED = MOVE_SPEED / 4;
+		}
+
+		if (hash.height) {
+			initialCameraPosition.y = hash.height;
+			MOVE_SPEED = Math.max(5, MOVE_SPEED * hash.height / 130);
+			SLOW_SPEED = Math.max(5, SLOW_SPEED * hash.height / 130);
 		}
 
 		if (hash.loc) {
