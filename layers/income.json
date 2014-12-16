@@ -1,0 +1,71 @@
+{
+	"input": {
+		"type": "BlueprintInputGeoJSON",
+		"options": {
+			"tilePath": "data/income/{z}-{x}-{y}.json"
+		}
+	},
+	"output": {
+		"type": "BlueprintOutputBarTiles",
+		"options": {
+			"grids": [{
+				"zoom": 10,
+				"tilesPerDirection": 1,
+				"cullZoom": 8
+			}],
+			"workerURL": "js/lib/vizi-worker.js",
+
+			"scaleHeight": 0.001,
+			"radius": 10,
+
+			"materialType": "MeshPhongMaterial",
+			"materialOptions": {
+				"transparent": true,
+				"opacity": 0.6,
+				"color": 15597568,
+				"emissive": 204
+			}
+		}
+	},
+	"triggers": [{
+		"triggerObject": "output",
+		"triggerName": "initialised",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "output",
+		"triggerName": "gridUpdated",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "input",
+		"triggerName": "tileReceived",
+		"triggerArguments": ["geoJSON", "tile"],
+		"actionObject": "output",
+		"actionName": "outputBarTile",
+		"actionArguments": ["data", "tile"],
+		"actionOutput": {
+			"data": {
+				"process": "map",
+				"itemsObject": "geoJSON",
+				"itemsProperties": "features",
+				"transformation": {
+					"geometryType": "geometry.type",
+					"coordinates": "geometry.coordinates",
+					"height": "properties.income"
+				}
+			},
+			"tile": "tile"
+		}
+	}]
+}
