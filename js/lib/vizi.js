@@ -9082,6 +9082,14 @@ if (typeof window === undefined) {
     // Find grid
     var gridHash = self.grids[tile.z];
 
+    var bounds = gridHash.grid.bounds;
+
+    // Tile out of bounds
+    if (tile.x < bounds.w || tile.x > bounds.e || tile.y > bounds.s || tile.y < bounds.n) {
+      // This is probably an old image loading late, in the wrong place
+      return;
+    }
+
     var localCoords = gridHash.grid.globalToLocalTiles(tile.x, tile.y);
     var materialIndex = localCoords.y * gridHash.grid.tileCount.x + localCoords.x;
 
