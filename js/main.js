@@ -14,6 +14,8 @@
 		SLOW_SPEED = MOVE_SPEED / 4,
 		CITY_SCALE = 6,
 		COLLISION_RADIUS = 1,
+		NEAR = 1,
+		FAR = 10000,
 
 		// Three.js stuff
 		camera,
@@ -273,8 +275,8 @@
 		ssaoEffect.clear = true;
 
 		vrEffect = new THREE.VRStereoEffect(renderer);
-		vrEffect.near = 1;
-		vrEffect.far = 40000;
+		vrEffect.near = NEAR;
+		vrEffect.far = FAR;
 		vrEffect.addEventListener('fullscreenchange', function () {
 			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview());
 			if (vrControls.freeze) {
@@ -309,6 +311,8 @@
 		camera = viziWorld.camera.camera;
 		camera.position.set(0, 0, 0);
 		camera.rotation.set(0, 0, 0);
+		camera.near = NEAR;
+		camera.far = FAR;
 
 		layers.forEach(function (layer) {
 			d3.json('layers/' + layer + '.json', function(error, data) {
