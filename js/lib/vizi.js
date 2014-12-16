@@ -9048,7 +9048,7 @@ if (typeof window === undefined) {
     }
 
     // Hacky method for forcing render depth / layers using tile zoom
-    gridMesh.renderDepth = grid.tileZoom * -1;
+    //gridMesh.renderDepth = grid.tileZoom * -1;
 
     var centerPos = [geoBounds.sw.x + (size[0] / 2), geoBounds.sw.y - (size[1] / 2)];
 

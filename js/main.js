@@ -29,6 +29,8 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
+		snow,
+
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
 
@@ -73,6 +75,7 @@
 		locationCache = {},
 
 		stats,
+		lastTick = 0,
 		clock = new THREE.Clock();
 
 	function startMoving() {
@@ -193,7 +196,13 @@
 	}
 
 	function render() {
-		var tick = Date.now();
+		var tick = Date.now(),
+			delta = tick - lastTick;
+
+		if (!delta || delta > 1000) {
+			delta = 1000/60;
+		}
+		snow.time(snow.time() + delta * 0.00005);
 
 		//Mediator.publish('update', tick - lastTick, lastTick);
 
@@ -206,9 +215,11 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
+		snow.visible = false;
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
 
+		snow.visible = true;
 		scene.overrideMaterial = null;
 		vrEffect.render(scene, camera, sceneTarget, true);
 
@@ -244,6 +255,15 @@
 			)
 		);
 		body.add(pointer);
+
+		snow = new THREE.Snow({
+			count: 300000,
+			minSize: 10,
+			maxSize: 20,
+			range: new THREE.Vector3(6000, 2000, 6000)
+		});
+		snow.particles.renderDepth = -100;
+		body.add(snow.particles);
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
