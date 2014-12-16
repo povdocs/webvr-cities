@@ -296,7 +296,8 @@
 	function initVizi() {
 		var layers = [
 			'buildings',
-			'map'
+			'map',
+			'income'
 		];
 
 		viziWorld = new VIZI.World({
