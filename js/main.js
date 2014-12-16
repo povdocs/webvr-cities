@@ -333,12 +333,22 @@
 		var locationName = document.getElementById('location-name');
 
 		function changeLocation(loc) {
-			var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
-				pos = viziWorld.project(latLng);
+			var latLng = new VIZI.LatLon(parseFloat(loc.lat - 0.003), parseFloat(loc.lon)),
+				pos = viziWorld.project(latLng),
+				cos;
 
 			viziWorld.moveToLatLon(latLng);
 			body.position.x = pos.x;
 			body.position.z = pos.y;
+
+			//reset camera view
+			lookLongitude = -Math.PI / 2;
+			lookLatitude = 0;
+			lookTarget.y = Math.sin(lookLatitude);
+			cos = Math.cos(lookLatitude);
+			lookTarget.x = cos * Math.cos(lookLongitude);
+			lookTarget.z = cos * Math.sin(lookLongitude);
+			camera.lookAt(lookTarget);
 
 			if (locationName.firstChild) {
 				locationName.firstChild.nodeValue = loc.display_name;
@@ -349,7 +359,7 @@
 			//todo: update query param in URL
 		}
 
-		var url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
+		var url = 'http://nominatim.openstreetmap.org/search?addressdetails=1&format=json&q=',
 			loc;
 
 		if (val) {
