@@ -14,6 +14,8 @@
 		SLOW_SPEED = MOVE_SPEED / 4,
 		CITY_SCALE = 6,
 		COLLISION_RADIUS = 1,
+		NEAR = 1,
+		FAR = 10000,
 
 		// Three.js stuff
 		camera,
@@ -67,6 +69,7 @@
 		infobutton = document.getElementById('infobutton'),
 		info = document.getElementById('info'),
 		searchbutton = document.getElementById('search'),
+		locationInput = document.getElementById('location'),
 
 		locationCache = {},
 
@@ -143,28 +146,12 @@
 
 			distance = scratchVector.length();
 			if (distance) {
-				/*
-				scratchVector2.copy(scratchVector).normalize().setY(0.001);
-				rayCaster.set(body.position, scratchVector2);
-				//rayCaster.far = distance + COLLISION_RADIUS;
-				octreeResults = octree.search(body.position, rayCaster.far, true, scratchVector2);
-				intersections = rayCaster.intersectOctreeObjects(octreeResults, true);
-				//intersections = rayCaster.intersectObjects(octree.objects, true);
-				if (!intersections.length) {
-					//*/
-					body.position.add(scratchVector);
+				body.position.add(scratchVector);
 
-					scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
+				scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
 
-					var point = new VIZI.Point(body.position.x, body.position.z);
-					VIZI.Messenger.emit('controls:move', point);
-
-					// TODO: Only emit this if it has changed
-					//var zoom = self.getZoom();
-					//VIZI.Messenger.emit("controls:zoom", zoom);
-					//Mediator.publish('targetPositionChanged', scratchVector);
-					//vrMouse.update(); //only need this if the world is animating
-				//}
+				var point = new VIZI.Point(body.position.x, body.position.z);
+				VIZI.Messenger.emit('controls:move', point);
 			}
 		}
 	}
@@ -273,8 +260,8 @@
 		ssaoEffect.clear = true;
 
 		vrEffect = new THREE.VRStereoEffect(renderer);
-		vrEffect.near = 1;
-		vrEffect.far = 40000;
+		vrEffect.near = NEAR;
+		vrEffect.far = FAR;
 		vrEffect.addEventListener('fullscreenchange', function () {
 			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview());
 			if (vrControls.freeze) {
@@ -309,6 +296,8 @@
 		camera = viziWorld.camera.camera;
 		camera.position.set(0, 0, 0);
 		camera.rotation.set(0, 0, 0);
+		camera.near = NEAR;
+		camera.far = FAR;
 
 		layers.forEach(function (layer) {
 			d3.json('layers/' + layer + '.json', function(error, data) {
@@ -329,12 +318,22 @@
 		var locationName = document.getElementById('location-name');
 
 		function changeLocation(loc) {
-			var latLng = new VIZI.LatLon(parseFloat(loc.lat), parseFloat(loc.lon)),
-				pos = viziWorld.project(latLng);
+			var latLng = new VIZI.LatLon(parseFloat(loc.lat - 0.003), parseFloat(loc.lon)),
+				pos = viziWorld.project(latLng),
+				cos;
 
 			viziWorld.moveToLatLon(latLng);
 			body.position.x = pos.x;
 			body.position.z = pos.y;
+
+			//reset camera view
+			lookLongitude = -Math.PI / 2;
+			lookLatitude = 0;
+			lookTarget.y = Math.sin(lookLatitude);
+			cos = Math.cos(lookLatitude);
+			lookTarget.x = cos * Math.cos(lookLongitude);
+			lookTarget.z = cos * Math.sin(lookLongitude);
+			camera.lookAt(lookTarget);
 
 			if (locationName.firstChild) {
 				locationName.firstChild.nodeValue = loc.display_name;
@@ -342,10 +341,14 @@
 				locationName.appendChild(document.createTextNode(loc.display_name));
 			}
 
+			if (locationInput !== document.activeElement) {
+				locationInput.value = '';
+			}
+
 			//todo: update query param in URL
 		}
 
-		var url = 'http://nominatim.openstreetmap.org/search?format=json&q=',
+		var url = 'http://nominatim.openstreetmap.org/search?addressdetails=1&format=json&q=',
 			loc;
 
 		if (val) {
@@ -471,8 +474,6 @@
 	}
 
 	function init() {
-		var locationInput = document.getElementById('location');
-
 		parseQuery();
 		initVizi();
 		initScene();
@@ -504,8 +505,6 @@
 
 		//todo: set up button to trigger full screen
 		window.addEventListener('keydown', function (evt) {
-			//console.log('keydown', evt.keyCode);
-
 			if (evt.target instanceof HTMLInputElement) {
 				return;
 			}
@@ -540,10 +539,6 @@
 						vrControls.reset();
 					}
 				}
-			} else if (evt.keyCode === 187 || evt.keyCode === 61) { //+
-				//resizeFOV(0.1);
-			} else if (evt.keyCode === 189 || evt.keyCode === 173) { //-
-				//resizeFOV(-0.1);
 			} else if (evt.keyCode === 13) {
 				vrEffect.requestFullScreen();
 			}
@@ -570,8 +565,6 @@
 				keys.s = false;
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = false;
-			} else if (evt.keyCode === 32) { //space
-				//vrMouse.center();
 			}
 		}, false);
 
@@ -593,6 +586,7 @@
 		locationInput.addEventListener('keypress', function (evt) {
 			if (evt.keyCode === 13) {
 				searchLocation(locationInput.value);
+				locationInput.blur();
 			}
 		});
 	}
