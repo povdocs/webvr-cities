@@ -1,14 +1,11 @@
 (function () {
-	var initialCameraPosition = {
-			x: 0,
-			y: 130,
-			z: 0
-		},
-
-		PEER_API_KEY = 'evy8rcz8vdy22o6r',
+	var PEER_API_KEY = 'evy8rcz8vdy22o6r',
 
 		START_LOCATION = 'Times Square, New York',
+		START_LAT = 40.7564812,
+		START_LON = -73.9861832,
 
+		DEFAULT_HEIGHT = 130,
 		FOG = 250,
 		MOVE_SPEED = 80,
 		SLOW_SPEED = MOVE_SPEED / 4,
@@ -41,7 +38,13 @@
 		//VIZI stuff
 		viziWorld,
 
-		dataVizes = {},
+		dataVizes = {
+			'': {
+				height: DEFAULT_HEIGHT,
+				latitude: START_LAT,
+				longitude: START_LON
+			}
+		},
 
 		keys = {
 			forward: false,
@@ -98,6 +101,12 @@
 		if (!keys.w && !keys.a && !keys.s && !keys.d) {
 			moving = false;
 		}
+	}
+
+	function updateHeight(height) {
+		body.position.y = height;
+		MOVE_SPEED = Math.max(5, 180 * height / 130);
+		SLOW_SPEED = Math.max(5, 180 / 4 * height / 130);
 	}
 
 	function updatePosition() {
@@ -237,9 +246,7 @@
 
 		body = new THREE.Object3D();
 		body.name = 'body';
-		body.position.x = initialCameraPosition.x;
-		body.position.y = initialCameraPosition.y;
-		body.position.z = initialCameraPosition.z;
+		body.position.y = DEFAULT_HEIGHT;
 		scene.add(body);
 
 		body.add(camera);
@@ -387,6 +394,12 @@
 
 			dataViz.active = true;
 
+			updateHeight(dataViz.height);
+
+			if (dataViz.latitude) {
+				searchLocation(dataViz.latitude + ', ' + dataViz.longitude);
+			}
+
 			_.each(dataViz.layers, function (layer, key) {
 				activateLayer(key);
 			});
@@ -419,7 +432,8 @@
 
 		window.dataViz = function (name, options) {
 			var active = (name in dataVizes),
-				dataViz = dataVizes[name];
+				dataViz = dataVizes[name],
+				lat, lon;
 
 			if (!name || !options || dataViz) {
 				return;
@@ -429,6 +443,7 @@
 				active: false,
 				name: name,
 				layers: {},
+				height: 0,
 				activate: options.activate || nop,
 				deactivate: options.deactivate || nop,
 				update: options.update,
@@ -439,6 +454,15 @@
 			defaultLayers.forEach(function (layerName) {
 				dataViz.layers[layerName] = true;
 			});
+
+			dataViz.height = Math.max(2, parseFloat(options.height) || DEFAULT_HEIGHT);
+			lat = parseFloat(options.latitude);
+			lon = parseFloat(options.longitude);
+
+			if (Math.abs(lat) < 90 && !isNaN(lon) && lon !== Infinity && lon !== -Infinity) {
+				dataViz.latitude = lat;
+				dataViz.longitude = lon;
+			}
 
 			if (options.layers) {
 				_.each(options.layers, function (layer, key) {
@@ -480,6 +504,8 @@
 			});
 
 			activateDataViz(val);
+
+			this.blur();
 		});
 
 		//todo: load from query. activateDataViz('weather');
@@ -488,7 +514,7 @@
 	function initVizi() {
 		viziWorld = new VIZI.World({
 			viewport: document.body,
-			center: new VIZI.LatLon(40.7564812, -73.9861832),
+			center: new VIZI.LatLon(START_LAT, START_LON),
 			//zoom: 19,
 			suppressRenderer: true
 		});
@@ -652,9 +678,7 @@
 		}
 
 		if (hash.height) {
-			initialCameraPosition.y = hash.height;
-			MOVE_SPEED = Math.max(5, MOVE_SPEED * hash.height / 130);
-			SLOW_SPEED = Math.max(5, SLOW_SPEED * hash.height / 130);
+			updateHeight(hash.height);
 		}
 
 		if (hash.loc) {
