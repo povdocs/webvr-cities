@@ -279,7 +279,11 @@
         var minHeight = (feature.minHeight) ? feature.minHeight : 0;
         minHeight *= scaleHeight;
 
-        var extrudeSettings = { amount: height - minHeight, bevelEnabled: false };
+        var extrudeSettings = {
+          curveSegments: 4,
+          amount: height - minHeight,
+          bevelEnabled: false
+        };
 
         geom = new THREE.ExtrudeGeometry( shape, extrudeSettings );
         geom.computeFaceNormals();
