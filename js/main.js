@@ -69,6 +69,7 @@
 		infobutton = document.getElementById('infobutton'),
 		info = document.getElementById('info'),
 		searchbutton = document.getElementById('search'),
+		locationInput = document.getElementById('location'),
 
 		locationCache = {},
 
@@ -340,6 +341,10 @@
 				locationName.appendChild(document.createTextNode(loc.display_name));
 			}
 
+			if (locationInput !== document.activeElement) {
+				locationInput.value = '';
+			}
+
 			//todo: update query param in URL
 		}
 
@@ -469,8 +474,6 @@
 	}
 
 	function init() {
-		var locationInput = document.getElementById('location');
-
 		parseQuery();
 		initVizi();
 		initScene();
