@@ -145,28 +145,12 @@
 
 			distance = scratchVector.length();
 			if (distance) {
-				/*
-				scratchVector2.copy(scratchVector).normalize().setY(0.001);
-				rayCaster.set(body.position, scratchVector2);
-				//rayCaster.far = distance + COLLISION_RADIUS;
-				octreeResults = octree.search(body.position, rayCaster.far, true, scratchVector2);
-				intersections = rayCaster.intersectOctreeObjects(octreeResults, true);
-				//intersections = rayCaster.intersectObjects(octree.objects, true);
-				if (!intersections.length) {
-					//*/
-					body.position.add(scratchVector);
+				body.position.add(scratchVector);
 
-					scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
+				scratchVector.copy(body.position);//.divideScalar(CITY_SCALE);
 
-					var point = new VIZI.Point(body.position.x, body.position.z);
-					VIZI.Messenger.emit('controls:move', point);
-
-					// TODO: Only emit this if it has changed
-					//var zoom = self.getZoom();
-					//VIZI.Messenger.emit("controls:zoom", zoom);
-					//Mediator.publish('targetPositionChanged', scratchVector);
-					//vrMouse.update(); //only need this if the world is animating
-				//}
+				var point = new VIZI.Point(body.position.x, body.position.z);
+				VIZI.Messenger.emit('controls:move', point);
 			}
 		}
 	}
@@ -518,8 +502,6 @@
 
 		//todo: set up button to trigger full screen
 		window.addEventListener('keydown', function (evt) {
-			//console.log('keydown', evt.keyCode);
-
 			if (evt.target instanceof HTMLInputElement) {
 				return;
 			}
@@ -554,10 +536,6 @@
 						vrControls.reset();
 					}
 				}
-			} else if (evt.keyCode === 187 || evt.keyCode === 61) { //+
-				//resizeFOV(0.1);
-			} else if (evt.keyCode === 189 || evt.keyCode === 173) { //-
-				//resizeFOV(-0.1);
 			} else if (evt.keyCode === 13) {
 				vrEffect.requestFullScreen();
 			}
@@ -584,8 +562,6 @@
 				keys.s = false;
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = false;
-			} else if (evt.keyCode === 32) { //space
-				//vrMouse.center();
 			}
 		}, false);
 
