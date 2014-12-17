@@ -583,6 +583,7 @@
 		locationInput.addEventListener('keypress', function (evt) {
 			if (evt.keyCode === 13) {
 				searchLocation(locationInput.value);
+				locationInput.blur();
 			}
 		});
 	}
