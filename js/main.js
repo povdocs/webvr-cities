@@ -29,7 +29,6 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
-		snow,
 
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
@@ -41,6 +40,8 @@
 
 		//VIZI stuff
 		viziWorld,
+
+		dataVizes = {},
 
 		keys = {
 			forward: false,
@@ -184,10 +185,12 @@
 		var tick = Date.now(),
 			delta = tick - lastTick;
 
-		if (!delta || delta > 1000) {
-			delta = 1000/60;
-		}
-		snow.time(snow.time() + delta * 0.00005);
+		//update any active dataviz scenes
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.update) {
+				dataViz.update(tick);
+			}
+		});
 
 		//Mediator.publish('update', tick - lastTick, lastTick);
 
@@ -200,11 +203,23 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
-		snow.visible = false;
+		//update hide active dataviz scenes that don't render depth
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.disableDepth) {
+				dataViz.disableDepth();
+			}
+		});
+
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
 
-		snow.visible = true;
+		//reset hide active dataviz scenes that don't render depth
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.resetDepth) {
+				dataViz.resetDepth();
+			}
+		});
+
 		scene.overrideMaterial = null;
 		vrEffect.render(scene, camera, sceneTarget, true);
 
@@ -221,6 +236,7 @@
 		renderer = new THREE.WebGLRenderer();
 
 		body = new THREE.Object3D();
+		body.name = 'body';
 		body.position.x = initialCameraPosition.x;
 		body.position.y = initialCameraPosition.y;
 		body.position.z = initialCameraPosition.z;
@@ -240,15 +256,6 @@
 			)
 		);
 		body.add(pointer);
-
-		snow = new THREE.Snow({
-			count: 300000,
-			minSize: 10,
-			maxSize: 20,
-			range: new THREE.Vector3(6000, 2000, 6000)
-		});
-		snow.particles.renderDepth = -100;
-		body.add(snow.particles);
 
 		vrControls = new THREE.VRControls( camera );
 		vrControls.freeze = true;
@@ -298,13 +305,171 @@
 		});
 	}
 
-	function initVizi() {
-		var layers = [
-			'buildings',
-			'map',
-			'income'
-		];
+	function initDataViz() {
+		var defaultLayers = [
+				'buildings',
+				'map'
+			],
+			layers = {};
 
+		function nop() {}
+
+		function loadLayer(name, obj) {
+			var layer = layers[name],
+				switchboard = new VIZI.BlueprintSwitchboard(obj);
+
+			switchboard.addToWorld(viziWorld);
+			layer.object = switchboard.output.object;
+		}
+
+		function requestLayer(name) {
+			var layer = layers[name];
+			if (!layer) {
+				layer = layers[name] = {
+					object: null,
+					active: false
+				};
+
+				d3.json('layers/' + name + '.json', function(error, data) {
+					if (error) {
+						console.warn(error);
+						return;
+					}
+
+					loadLayer(name, data);
+					if (layer.object) {
+						layer.object.visible = layer.active;
+					}
+				});
+			}
+		}
+
+		function activateLayer(name) {
+			var layer = layers[name];
+
+			if (!layer) {
+				requestLayer(name);
+			} else  if (layer.object) {
+				layer.object.visible = true;
+			}
+			layers[name].active = true;
+		}
+
+		function deactivateLayer(name) {
+			var layer = layers[name];
+			if (layer) {
+				layer.active = false;
+				if (layer.object) {
+					layer.object.visible = true;
+				}
+			}
+		}
+
+		function activateDataViz(name) {
+			var script,
+				dataViz = dataVizes[name];
+			/*
+			Would like to use something like requirejs to load script,
+			but it's not compatible with vizicities at the moment
+			*/
+			if (dataViz === undefined) {
+				dataVizes[name] = null;
+				script = document.createElement('script');
+				script.src = 'js/dataViz/' + name + '.js';
+				document.body.appendChild(script);
+				return;
+			}
+
+			dataViz.active = true;
+
+			_.each(dataViz.layers, function (layer, key) {
+				activateLayer(key);
+			});
+
+			dataViz.activate();
+		}
+
+		function deactivateDataViz(name) {
+			var dataViz = dataVizes[name];
+
+			if (!dataViz) {
+				delete dataVizes[name];
+				return;
+			}
+
+			if (!dataViz.active) {
+				// nothing to do
+				return;
+			}
+
+			dataViz.active = false;
+
+			dataViz.deactivate();
+
+			_.each(dataViz.layers, function (layer, key) {
+				deactivateLayer(key);
+			});
+			defaultLayers.forEach(activateLayer);
+		}
+
+		window.dataViz = function (name, options) {
+			var active = (name in dataVizes),
+				dataViz = dataVizes[name];
+
+			if (!name || !options || dataViz) {
+				return;
+			}
+
+			dataViz = dataVizes[name] = {
+				active: false,
+				name: name,
+				layers: {},
+				activate: options.activate || nop,
+				deactivate: options.deactivate || nop,
+				update: options.update,
+				disableDepth: options.disableDepth,
+				resetDepth: options.resetDepth
+			};
+
+			defaultLayers.forEach(function (layerName) {
+				dataViz.layers[layerName] = true;
+			});
+
+			if (options.layers) {
+				_.each(options.layers, function (layer, key) {
+					if (!layer) {
+						delete dataViz.layers[key];
+						return;
+					}
+					if (typeof layer === 'string' && typeof key === 'number') {
+						key = layer;
+						layer = true;
+					}
+					dataViz.layers[key] = true;
+
+					if (typeof layer === 'object') {
+						loadLayer(key, layer);
+					} else {
+						requestLayer(key);
+					}
+				});
+			}
+
+			if (options.init) {
+				options.init(scene);
+			}
+
+			if (active) {
+				activateDataViz(name);
+			}
+		};
+
+		defaultLayers.forEach(activateLayer);
+
+		activateDataViz('weather');
+	}
+
+	function initVizi() {
 		viziWorld = new VIZI.World({
 			viewport: document.body,
 			center: new VIZI.LatLon(40.7564812, -73.9861832),
@@ -319,20 +484,6 @@
 		camera.rotation.set(0, 0, 0);
 		camera.near = NEAR;
 		camera.far = FAR;
-
-		layers.forEach(function (layer) {
-			d3.json('layers/' + layer + '.json', function(error, data) {
-				var switchboard;
-
-				if (error) {
-					console.warn(error);
-					return;
-				}
-
-				switchboard = new VIZI.BlueprintSwitchboard(data);
-				switchboard.addToWorld(viziWorld);
-			});
-		});
 	}
 
 	function searchLocation(val) {
@@ -502,6 +653,7 @@
 		initVizi();
 		initScene();
 		initControls();
+		initDataViz();
 
 		stats = new Stats();
 		stats.domElement.style.position = 'absolute';
