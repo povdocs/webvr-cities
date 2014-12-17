@@ -360,7 +360,7 @@
 			if (layer) {
 				layer.active = false;
 				if (layer.object) {
-					layer.object.visible = true;
+					layer.object.visible = false;
 				}
 			}
 		}
@@ -368,6 +368,11 @@
 		function activateDataViz(name) {
 			var script,
 				dataViz = dataVizes[name];
+
+			if (!name) {
+				return;
+			}
+
 			/*
 			Would like to use something like requirejs to load script,
 			but it's not compatible with vizicities at the moment
@@ -466,7 +471,18 @@
 
 		defaultLayers.forEach(activateLayer);
 
-		activateDataViz('weather');
+		document.getElementById('visualization').addEventListener('change', function () {
+			var val = this.value;
+			_.each(dataVizes, function (dataViz, name) {
+				if (name !== val) {
+					deactivateDataViz(name);
+				}
+			});
+
+			activateDataViz(val);
+		});
+
+		//todo: load from query. activateDataViz('weather');
 	}
 
 	function initVizi() {
