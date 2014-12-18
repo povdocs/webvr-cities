@@ -6,7 +6,8 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 	// configurable
 	var moveSpeed = options.moveSpeed || 10;
-	var slowSpeed = options.slowSpeed | moveSpeed / 5;
+	var slowFactor = options.slowFactor | 0.2;
+	var slowSpeed = moveSpeed * slowFactor;
 	var peerApiKey = options.peerApiKey;
 	var peerOptions = options.peerOptions || {
 		key: peerApiKey
@@ -320,6 +321,20 @@ THREE.RemoteWalkControl = function ( object, options ) {
 
 	this.flip = function () {
 		object.rotateOnAxis( yAxis, Math.PI );
+	};
+
+	this.speed = function (val) {
+		if (val !== undefined) {
+			moveSpeed = parseFloat(val) || moveSpeed;
+		}
+		return moveSpeed;
+	};
+
+	this.slowFactor = function (val) {
+		if (!isNaN(val)) {
+			slowFactor = val;
+		}
+		return slowFactor;
 	};
 };
 

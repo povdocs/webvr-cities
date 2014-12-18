@@ -103,11 +103,12 @@
 	}
 
 	function updateHeight(height) {
-		if (body) {
-			body.position.y = height;
-		}
 		MOVE_SPEED = Math.max(5, 180 * height / 100);
 		SLOW_SPEED = Math.max(5, 180 / 4 * height / 100);
+		if (body) {
+			body.position.y = height;
+			walkControl.speed(MOVE_SPEED);
+		}
 	}
 
 	function updatePosition() {
