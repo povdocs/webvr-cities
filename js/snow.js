@@ -6,9 +6,9 @@ THREE.ShaderLib.snow = {
 		alphaFalloff:	{ type: "f", value: 1 / 1800.0 }
 	},
 	vertexShader: [
-		'attribute float size;',
-		'attribute float time;',
-		'attribute vec3 customColor;',
+		//'attribute float size;',
+		//'attribute float time;',
+		//'attribute vec3 customColor;',
 		'uniform float globalTime;',
 
 		'uniform float alphaFalloff;',
@@ -17,8 +17,10 @@ THREE.ShaderLib.snow = {
 		'varying float fAlpha;',
 
 		'void main() {',
-
-		'	vColor = customColor;',
+		//'	vColor = customColor;',
+		'	vColor = vec3(1.0, 1.0, 1.0);',
+		'	float size = 15.0;',
+		'	float time = length(position);',
 
 		'	vec3 pos = position;',
 		//todo: offset pos by world position and then mod by range so particles repeat forever
@@ -31,9 +33,6 @@ THREE.ShaderLib.snow = {
 		'	pos.x += cos(modTime*8.0 + (position.z))*70.0;',
 		'	pos.z += sin(modTime*6.0 + (position.x))*100.0;',
 
-		//todo: should fall off with distance from camera, not absolute world position
-		//'	fAlpha = 1.0;//(pos.z) * alphaFalloff;',
-
 		'	vec3 animated = vec3( pos.x, pos.y * accTime, pos.z );',
 
 		'	vec4 mvPosition = modelViewMatrix * vec4( animated, 1.0 );',
@@ -41,6 +40,9 @@ THREE.ShaderLib.snow = {
 		'	gl_PointSize = min(150.0, size * ( 150.0 / length( mvPosition.xyz ) ) );',
 
 		'	gl_Position = projectionMatrix * mvPosition;',
+
+		//todo: should fall off with distance from camera, not absolute world position
+		'	fAlpha = gl_Position.z * alphaFalloff;',
 
 		'}'
 	].join("\n"),
@@ -53,7 +55,7 @@ THREE.ShaderLib.snow = {
 
 		'void main() {',
 
-		'	gl_FragColor = vec4( color * vColor, 1.0 );',
+		'	gl_FragColor = vec4( color * vColor, fAlpha );',
 		'	gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );',
 
 		'}'
@@ -64,9 +66,9 @@ THREE.Snow = function (options) {
 	var snowShader = THREE.ShaderLib.snow;
 	var uniforms = THREE.UniformsUtils.clone( snowShader.uniforms );
 	var attributes = {
-		size:		 { type: 'f', value: [] },
-		customColor: { type: 'c', value: [] },
-		time:		 { type: 'f', value: [] },
+		//size:		 { type: 'f', value: [] },
+		//customColor: { type: 'c', value: [] },
+		//time:		 { type: 'f', value: [] },
 	};
 
 	var shaderMaterial = new THREE.ShaderMaterial( {
@@ -88,32 +90,38 @@ THREE.Snow = function (options) {
 	var range = options.range || new THREE.Vector3(3000, 3000, 1800);
 
 	uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
-	//uniforms.color.value.setRGB(0, 0, 1);
 
-	var geometry = new THREE.Geometry();
-	//todo: http://threejs.org/docs/#Reference/Core/BufferGeometry
+	var geometry = new THREE.BufferGeometry();
+	var vertices = [];
+	var size = [];
+	var colors = [];
+	var times = [];
+	var color = new THREE.Color( 0xffffff );
 
 	for ( var i = 0; i < count; i++ ) {
-		var vector = new THREE.Vector3(Math.random() * range.x - range.x / 2, -range.y, Math.random() * range.z);
-
-		geometry.vertices.push( vector );
+		vertices.push(
+			Math.random() * range.x - range.x / 2,
+			-range.y,
+			Math.random() * range.z
+		);
 	}
+
+	geometry.addAttribute( 'position',
+		new THREE.BufferAttribute( new Float32Array( vertices ), 3 )
+	);
+	// geometry.addAttribute( 'size',
+	// 	new THREE.BufferAttribute( new Float32Array( size ), 1 )
+	// );
+	// geometry.addAttribute( 'time',
+	// 	new THREE.BufferAttribute( new Float32Array( times ), 1 )
+	// );
+	// geometry.addAttribute( 'customColor',
+	// 	new THREE.BufferAttribute( new Float32Array( colors ), 3 )
+	// );
 
 	var particles = new THREE.PointCloud( geometry, shaderMaterial );
 	particles.position.y = range.y / 2;
 	particles.position.z = -range.z / 2;
-
-	var vertices = particles.geometry.vertices;
-	var values_size = attributes.size.value;
-	var values_color = attributes.customColor.value;
-	var values_time = attributes.time.value;
-
-	for( var v = 0; v < vertices.length; v++ ) {
-		values_size[ v ] = minSize + Math.random() * sizeRange;
-		values_color[ v ] = new THREE.Color( 0xffffff );
-		values_color[ v ].setHSL(1.0, 0.0, 0.05 + Math.random() * 0.9);
-		values_time[ v ] = Math.random();
-	}
 
 	this.particles = particles;
 	this.position = particles.position;
