@@ -7,7 +7,7 @@
 		latitude: 40.78698618490198 + 0.003,
 		longitude: -73.97130228695384,
 
-		lookDirection: 0.48850069305936056,
+		lookDirection: -2,
 
 		init: function (scene) {
 		},

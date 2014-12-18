@@ -40,9 +40,7 @@
 
 		dataVizes = {
 			'': {
-				height: DEFAULT_HEIGHT,
-				latitude: START_LAT,
-				longitude: START_LON
+				height: DEFAULT_HEIGHT
 			}
 		},
 
@@ -320,8 +318,6 @@
 			],
 			layers = {};
 
-		function nop() {}
-
 		function notifyLayersLoaded(dataViz) {
 			var k,
 				layer,
@@ -412,10 +408,6 @@
 			var script,
 				dataViz = dataVizes[name];
 
-			if (!name) {
-				return;
-			}
-
 			/*
 			Would like to use something like requirejs to load script,
 			but it's not compatible with vizicities at the moment
@@ -433,20 +425,18 @@
 			updateHeight(dataViz.height);
 
 			if (dataViz.latitude) {
-				searchLocation(dataViz.latitude + ', ' + dataViz.longitude, function () {
-					if (!isNaN(dataViz.lookDirection)) {
-						lookLongitude = dataViz.lookDirection;
-					}
-				});
-			} else if (!isNaN(dataViz.lookDirection)) {
-				lookLongitude = dataViz.lookDirection;
+				searchLocation(dataViz.latitude + ', ' + dataViz.longitude);
 			}
+
+			body.rotation.y = dataViz.lookDirection || 0;
 
 			_.each(dataViz.layers, function (layer, key) {
 				activateLayer(key);
 			});
 
-			dataViz.activate();
+			if (dataViz.activate) {
+				dataViz.activate();
+			}
 		}
 
 		function deactivateDataViz(name) {
@@ -464,7 +454,9 @@
 
 			dataViz.active = false;
 
-			dataViz.deactivate();
+			if (dataViz.deactivate) {
+				dataViz.deactivate();
+			}
 
 			_.each(dataViz.layers, function (layer, key) {
 				deactivateLayer(key);
@@ -489,8 +481,8 @@
 				height: 0,
 				lookDirection: options.lookDirection,
 				layersLoaded: options.layersLoaded,
-				activate: options.activate || nop,
-				deactivate: options.deactivate || nop,
+				activate: options.activate,
+				deactivate: options.deactivate,
 				update: options.update,
 				disableDepth: options.disableDepth,
 				resetDepth: options.resetDepth
