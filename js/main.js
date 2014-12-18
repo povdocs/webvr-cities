@@ -78,6 +78,7 @@
 		locationInput = document.getElementById('location'),
 
 		locationCache = {},
+		searchCallbacks = {},
 
 		stats,
 		lastTick = 0,
@@ -397,7 +398,13 @@
 			updateHeight(dataViz.height);
 
 			if (dataViz.latitude) {
-				searchLocation(dataViz.latitude + ', ' + dataViz.longitude);
+				searchLocation(dataViz.latitude + ', ' + dataViz.longitude, function () {
+					if (!isNaN(dataViz.lookDirection)) {
+						lookLongitude = dataViz.lookDirection;
+					}
+				});
+			} else if (!isNaN(dataViz.lookDirection)) {
+				lookLongitude = dataViz.lookDirection;
 			}
 
 			_.each(dataViz.layers, function (layer, key) {
@@ -444,6 +451,7 @@
 				name: name,
 				layers: {},
 				height: 0,
+				lookDirection: options.lookDirection,
 				activate: options.activate || nop,
 				deactivate: options.deactivate || nop,
 				update: options.update,
@@ -528,7 +536,7 @@
 		camera.far = FAR;
 	}
 
-	function searchLocation(val) {
+	function searchLocation(val, callback) {
 		var locationName = document.getElementById('location-name');
 
 		function changeLocation(loc) {
@@ -569,8 +577,20 @@
 			loc = locationCache[val];
 			if (loc) {
 				changeLocation(loc);
+				if (callback) {
+					callback(loc);
+				}
 				return;
 			}
+
+			if (callback) {
+				if (searchCallbacks[val]) {
+					searchCallbacks[val].push(callback);
+				} else {
+					searchCallbacks[val] = [callback];
+				}
+			}
+
 			if (loc === null) {
 				//query in progress
 				return;
@@ -578,14 +598,29 @@
 
 			locationCache[val] = null;
 			d3.json(url + val, function(error, response) {
+				var match,
+					callbacks;
 				if (error) {
 					console.warn('Location search failed', val, error);
 					return;
 				}
 
-				if (response && response[0] && response[0].lat && response[0].lon) {
-					locationCache[val] = response[0];
-					changeLocation(locationCache[val]);
+				response = response && response[0];
+				if (response && response.lat && response.lon) {
+					match = /([\-+]?\d+(?:\.\d*)?)[, ]\s*([\-+]?\d+(?:\.\d*))?/.exec(val);
+					if (match) {
+						response.lat = parseFloat(match[1]);
+						response.lon = parseFloat(match[2]);
+					}
+					locationCache[val] = response;
+					changeLocation(response);
+
+					callbacks = searchCallbacks[val];
+					if (callbacks) {
+						while (callbacks.length) {
+							callbacks.shift()(response);
+						}
+					}
 				}
 			});
 		}

@@ -3,9 +3,12 @@
 
 	window.dataViz('bike', {
 		layers: ['anthonybike'],
-		height: 20,
-		latitude: 40.7829218,
-		longitude: -73.9651929417635,
+		height: 2,
+		latitude: 40.78698618490198 + 0.003,
+		longitude: -73.97130228695384,
+
+		lookDirection: 0.48850069305936056,
+
 		init: function (scene) {
 		},
 		update: function (tick) {
