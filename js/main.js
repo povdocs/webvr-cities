@@ -322,11 +322,41 @@
 
 		function nop() {}
 
+		function notifyLayersLoaded(dataViz) {
+			var k,
+				layer,
+				layerParams = {};
+
+			if (dataViz.notifiedLayers) {
+				return;
+			}
+
+			if (!dataViz.layersLoaded) {
+				dataViz.notifiedLayers = true;
+				return;
+			}
+
+			for (k in dataViz.layers) {
+				if (dataViz.layers.hasOwnProperty(k) && dataViz.layers[k]) {
+					layer = layers[k];
+					if (!layer || !layer.switchboard) {
+						return;
+					}
+					layerParams[k] = layer;
+				}
+			}
+
+			dataViz.layersLoaded(layerParams);
+
+			dataViz.notifiedLayers = true;
+		}
+
 		function loadLayer(name, obj) {
 			var layer = layers[name],
 				switchboard = new VIZI.BlueprintSwitchboard(obj);
 
 			switchboard.addToWorld(viziWorld);
+			layer.switchboard = switchboard;
 			layer.object = switchboard.output.object;
 		}
 
@@ -334,7 +364,9 @@
 			var layer = layers[name];
 			if (!layer) {
 				layer = layers[name] = {
+					name: name,
 					object: null,
+					switchboard: null,
 					active: false
 				};
 
@@ -348,6 +380,9 @@
 					if (layer.object) {
 						layer.object.visible = layer.active;
 					}
+
+					//notify any dataviz objects that have requested layers
+					_.each(dataVizes, notifyLayersLoaded);
 				});
 			}
 		}
@@ -447,11 +482,13 @@
 			}
 
 			dataViz = dataVizes[name] = {
-				active: false,
 				name: name,
+				active: false,
+				notifiedLayers: false,
 				layers: {},
 				height: 0,
 				lookDirection: options.lookDirection,
+				layersLoaded: options.layersLoaded,
 				activate: options.activate || nop,
 				deactivate: options.deactivate || nop,
 				update: options.update,
@@ -495,6 +532,8 @@
 			if (options.init) {
 				options.init(scene);
 			}
+
+			notifyLayersLoaded(dataViz);
 
 			if (active) {
 				activateDataViz(name);

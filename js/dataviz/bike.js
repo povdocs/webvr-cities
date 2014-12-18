@@ -11,6 +11,13 @@
 
 		init: function (scene) {
 		},
+
+		layersLoaded: function (layers) {
+			layers.anthonybike.switchboard.input.on('dataReceived', function (data) {
+
+			});
+		},
+
 		update: function (tick) {
 		},
 		activate: function () {
