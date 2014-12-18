@@ -1,0 +1,39 @@
+{
+	"input": {
+		"type": "BlueprintInputGPX",
+		"options": {
+			"path": "./data/anthonybike.gpx"
+		}
+	},
+	"output": {
+		"type": "BlueprintOutputDebugLines",
+		"options": {}
+	},
+	"triggers": [{
+		"triggerObject": "output",
+		"triggerName": "initialised",
+		"triggerArguments": [],
+		"actionObject": "input",
+		"actionName": "requestData",
+		"actionArguments": [],
+		"actionOutput": {}
+	}, {
+		"triggerObject": "input",
+		"triggerName": "dataReceived",
+		"triggerArguments": ["gpx"],
+		"actionObject": "output",
+		"actionName": "outputLines",
+		"actionArguments": ["data"],
+		"actionOutput": {
+			"data": {
+				"process": "map",
+				"itemsObject": "gpx",
+				"itemsProperties": "trk.trkseg.trkpt",
+				"transformation": {
+					"coordinates": ["@lon", "@lat"],
+					"time": "time"
+				}
+			}
+		}
+	}]
+}
