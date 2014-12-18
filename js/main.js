@@ -103,9 +103,11 @@
 	}
 
 	function updateHeight(height) {
-		body.position.y = height;
-		MOVE_SPEED = Math.max(5, 180 * height / 130);
-		SLOW_SPEED = Math.max(5, 180 / 4 * height / 130);
+		if (body) {
+			body.position.y = height;
+		}
+		MOVE_SPEED = Math.max(5, 180 * height / 100);
+		SLOW_SPEED = Math.max(5, 180 / 4 * height / 100);
 	}
 
 	function updatePosition() {
@@ -744,7 +746,9 @@
 		}
 
 		if (hash.height) {
-			updateHeight(hash.height);
+			DEFAULT_HEIGHT = Math.max(0.2, parseFloat(hash.height) || DEFAULT_HEIGHT);
+			dataVizes[''].height = DEFAULT_HEIGHT;
+			updateHeight(DEFAULT_HEIGHT)
 		}
 
 		if (hash.loc) {
