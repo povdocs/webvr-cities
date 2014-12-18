@@ -31,7 +31,8 @@
 				"itemsProperties": "trk.trkseg.trkpt",
 				"transformation": {
 					"coordinates": ["@lon", "@lat"],
-					"time": "time"
+					"time": "time",
+					"height": "ele"
 				}
 			}
 		}
