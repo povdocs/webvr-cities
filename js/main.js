@@ -729,7 +729,8 @@
 	function parseQuery() {
 		var search = window.location.search.substr(1),
 			queries = search.split('&'),
-			hash;
+			hash,
+			select = document.getElementById('visualization');
 
 		hash = queries.reduce(function (previous, current) {
 			var split = current.split('='),
@@ -763,7 +764,12 @@
 		}
 
 		if (hash.viz) {
-			activateDataViz(hash.viz);
+			select.value = hash.viz;
+			if (select.selectedIndex >= 0) {
+				activateDataViz(hash.viz);
+			} else {
+				select.selectedIndex = 0;
+			}
 		}
 	}
 
