@@ -434,7 +434,11 @@
 			body.rotation.y = dataViz.lookDirection || 0;
 
 			_.each(dataViz.layers, function (layer, key) {
-				activateLayer(key);
+				if (layer) {
+					activateLayer(key);
+				} else {
+					deactivateLayer(key);
+				}
 			});
 
 			if (dataViz.activate) {
@@ -506,20 +510,18 @@
 
 			if (options.layers) {
 				_.each(options.layers, function (layer, key) {
-					if (!layer) {
-						delete dataViz.layers[key];
-						return;
-					}
 					if (typeof layer === 'string' && typeof key === 'number') {
 						key = layer;
 						layer = true;
 					}
-					dataViz.layers[key] = true;
+					dataViz.layers[key] = !!layer;
 
-					if (typeof layer === 'object') {
-						loadLayer(key, layer);
-					} else {
-						requestLayer(key);
+					if (layer) {
+						if (typeof layer === 'object') {
+							loadLayer(key, layer);
+						} else {
+							requestLayer(key);
+						}
 					}
 				});
 			}
