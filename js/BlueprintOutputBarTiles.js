@@ -244,7 +244,7 @@
         var geoCoord = project(latLon);
 
         if (options.shape === 'sphere') {
-          geom = new THREE.SphereGeometry(height, 16, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI);
+          geom = new THREE.SphereGeometry(height, 6, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI);
           geom.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
           geom.applyMatrix(new THREE.Matrix4().makeTranslation(geoCoord.x, geoCoord.y, height));
         } else {
