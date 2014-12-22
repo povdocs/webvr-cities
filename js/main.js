@@ -80,7 +80,10 @@
 
 		stats,
 		lastTick = 0,
-		clock = new THREE.Clock();
+		clock = new THREE.Clock(),
+
+		activateDataViz,
+		deactivateDataViz;
 
 	function startMoving() {
 		if (!moving) {
@@ -326,7 +329,7 @@
 				layer,
 				layerParams = {};
 
-			if (dataViz.notifiedLayers) {
+			if (!dataViz || dataViz.notifiedLayers) {
 				return;
 			}
 
@@ -407,9 +410,15 @@
 			}
 		}
 
-		function activateDataViz(name) {
+		activateDataViz = function (name) {
 			var script,
 				dataViz = dataVizes[name];
+
+			_.each(dataVizes, function (dataViz, id) {
+				if (name !== id) {
+					deactivateDataViz(id);
+				}
+			});
 
 			/*
 			Would like to use something like requirejs to load script,
@@ -446,7 +455,7 @@
 			}
 		}
 
-		function deactivateDataViz(name) {
+		deactivateDataViz = function (name) {
 			var dataViz = dataVizes[name];
 
 			if (!dataViz) {
@@ -540,14 +549,7 @@
 		defaultLayers.forEach(activateLayer);
 
 		document.getElementById('visualization').addEventListener('change', function () {
-			var val = this.value;
-			_.each(dataVizes, function (dataViz, name) {
-				if (name !== val) {
-					deactivateDataViz(name);
-				}
-			});
-
-			activateDataViz(val);
+			activateDataViz(this.value);
 
 			this.blur();
 		});
@@ -759,14 +761,18 @@
 		} else {
 			searchLocation(START_LOCATION);
 		}
+
+		if (hash.viz) {
+			activateDataViz(hash.viz);
+		}
 	}
 
 	function init() {
+		initDataViz();
 		parseQuery();
 		initVizi();
 		initScene();
 		initControls();
-		initDataViz();
 
 		stats = new Stats();
 		stats.domElement.style.position = 'absolute';
