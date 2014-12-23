@@ -21,7 +21,7 @@ THREE.ShaderLib.snow = {
 
 		// offset pos by world position and then mod by range so particles repeat forever
 		'	vec4 offset = modelMatrix * zero;',
-		'	pos.xz -= mod(offset.xz, range.xz);',
+		'	pos.xz = mod(pos.xz + range.xz / 2.0 - offset.xz, range.xz) - range.xz / 2.0;',
 
 			// time
 		'	float localTime = length(position) + globalTime;',
@@ -89,7 +89,7 @@ THREE.Snow = function (options) {
 		vertices.push(
 			Math.random() * range.x - range.x / 2,
 			-range.y,
-			Math.random() * range.z
+			Math.random() * range.z - range.z / 2
 		);
 	}
 
@@ -108,7 +108,7 @@ THREE.Snow = function (options) {
 
 	var particles = new THREE.PointCloud( geometry, shaderMaterial );
 	particles.position.y = range.y / 2;
-	particles.position.z = -range.z / 2;
+	//particles.position.z = -range.z / 2;
 
 	this.particles = particles;
 	this.position = particles.position;
