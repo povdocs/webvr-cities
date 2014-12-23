@@ -263,6 +263,7 @@
 		body.add(camera);
 
 		pointer = new THREE.Object3D();
+		pointer.name = 'pointer';
 		pointer.position.y = -5;
 		pointer.add(
 			//todo: make a better-looking pointer
@@ -325,8 +326,9 @@
 
 	function initDataViz() {
 		var defaultLayers = [
+				//'population'/*,
 				'buildings',
-				'map'
+				'map'//*/
 			],
 			layers = {};
 

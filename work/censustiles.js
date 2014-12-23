@@ -1,3 +1,5 @@
+var fullShapes = false;
+
 var shapefile = require('shapefile-stream'),
 	through = require('through2'),
 	simplify = require('simplify-js'),
@@ -34,7 +36,7 @@ function simplifyFeature(feature, tolerance, highQuality){
 		line.coordinates = simplify(pts, tolerance, highQuality).map(function(coords){
 			return [coords.x, coords.y];
 		});
-		
+
 		return simpleFeature(line, feature.properties);
 	}
 
@@ -52,7 +54,7 @@ function simplifyFeature(feature, tolerance, highQuality){
 			});
 			poly.coordinates.push(simpleRing);
 		});
-		return simpleFeature(poly, feature.properties)
+		return simpleFeature(poly, feature.properties);
 	}
 
 	if(feature.geometry.type === 'MultiPolygon') {
@@ -73,11 +75,11 @@ function simplifyFeature(feature, tolerance, highQuality){
 			});
 			multiPoly.coordinates.push(polygon);
 		});
-		return simpleFeature(multiPoly, feature.properties)
+		return simpleFeature(multiPoly, feature.properties);
 	}
 
 	console.log('unknown geometry type', feature.geometry.type);
-	debugger;
+	//debugger;
 }
 
 function saveNextFile() {
@@ -97,15 +99,18 @@ function saveNextFile() {
 		features: features
 	};
 
-	fs.writeFile('censusdata/' + key + '.json', JSON.stringify(tile), function (err) {
-	  if (err) throw err;
-	  
+	fs.writeFile('scratch/censusdata/' + key + '.json', JSON.stringify(tile), function (err) {
+	  if (err) {
+	  	console.log(err, err.stack);
+	  	throw err;
+	  }
+
 	  saveNextFile();
 	});
 }
 
-// both the .shp and the .dbf files are required 
-shapefile.createReadStream( 'census/Tract_2010Census_DP1.shp' )
+// both the .shp and the .dbf files are required
+shapefile.createReadStream( 'scratch/Tract_2010Census_DP1.shp' )
 	.pipe( shapefile.stringify )
 	.pipe( through.obj( function( data, enc, next ){
 		var feature = JSON.parse(data),
@@ -118,17 +123,27 @@ shapefile.createReadStream( 'census/Tract_2010Census_DP1.shp' )
 			key;
 
 		count++;
-		if (!(count % 100)) {
+		if (count % 100 === 0) {
 			console.log(count);
 		}
 
 		try {
-			feature = simplifyFeature(feature, quantization, hq);
+			if (fullShapes) {
+				feature = simplifyFeature(feature, quantization, hq);
 
-			after = feature.geometry.coordinates[0].length;
+				after = feature.geometry.coordinates[0].length;
 
-			if (after < 4) {
-				console.log(feature.properties.GEOID10, before, after);
+				if (after < 4) {
+					console.log(feature.properties.GEOID10, before, after);
+				}
+			} else {
+				feature.geometry = {
+					type: 'Point',
+					coordinates: [
+						longitude,
+						latitude
+					]
+				};
 			}
 
 			x = long2tile(longitude, ZOOM);
@@ -141,7 +156,7 @@ shapefile.createReadStream( 'census/Tract_2010Census_DP1.shp' )
 				tiles[key] = [feature];
 			}
 		} catch (e) {
-			debugger;
+			//debugger;
 			console.log('error', e, before, after, feature, Object.keys(JSON.parse(data)));
 			return;
 		}

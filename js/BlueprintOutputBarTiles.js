@@ -5,7 +5,7 @@
 /**
  * Blueprint bar chart tiles output
  * @author Brian Chirls - chirls.com.com
- */  
+ */
 
   // output: {
   //   type: "BlueprintOutputBarTiles",
