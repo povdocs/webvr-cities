@@ -2,7 +2,6 @@ THREE.ShaderLib.snow = {
 	uniforms: {
 		texture:	{ type: "t", value: null },
 		globalTime:	{ type: "f", value: 0.0 },
-		alphaFalloff:	{ type: "f", value: 1 },
 		size:	{ type: "f", value: 0.5 }, //????
 		range: { type: "3f", value: [1000, 1000, 1000] },
 		screenHeight: { type: "f", value: 1080 }
@@ -12,9 +11,6 @@ THREE.ShaderLib.snow = {
 		'uniform float size;',
 		'uniform float screenHeight;',
 		'uniform vec3 range;',
-		'uniform float alphaFalloff;',
-
-		'varying float fAlpha;',
 
 		'const vec4 zero = vec4(0.0, 0.0, 0.0, 1.0);',
 
@@ -41,12 +37,7 @@ THREE.ShaderLib.snow = {
 
 		'	gl_Position = projectionMatrix * mvPosition;',
 
-		'	float distance = length( gl_Position.xyz );',
-
-		'	gl_PointSize = maxSize / distance;',
-
-		'	fAlpha = 1.0 - (distance * alphaFalloff);',
-
+		'	gl_PointSize = maxSize / length( gl_Position.xyz );',
 		'}'
 	].join("\n"),
 	fragmentShader: [
