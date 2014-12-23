@@ -1,69 +1,61 @@
 THREE.ShaderLib.snow = {
 	uniforms: {
-		color:		{ type: "c", value: new THREE.Color( 0x777777 ) },
 		texture:	{ type: "t", value: null },
 		globalTime:	{ type: "f", value: 0.0 },
-		size:	{ type: "f", value: 30.0 }, //todo: set this based on resolution
-		alphaFalloff:	{ type: "f", value: 1 / 1800.0 }
+		alphaFalloff:	{ type: "f", value: 1 },
+		size:	{ type: "f", value: 0.5 }, //????
+		range: { type: "3f", value: [1000, 1000, 1000] },
+		screenHeight: { type: "f", value: 1080 }
 	},
 	vertexShader: [
-		//'attribute float size;',
-		//'attribute float time;',
-		//'attribute vec3 customColor;',
 		'uniform float globalTime;',
 		'uniform float size;',
-
+		'uniform float screenHeight;',
+		'uniform vec3 range;',
 		'uniform float alphaFalloff;',
 
-		'varying vec3 vColor;',
 		'varying float fAlpha;',
 
 		'const vec4 zero = vec4(0.0, 0.0, 0.0, 1.0);',
 
 		'void main() {',
-		//'	vColor = customColor;',
-		'	vColor = vec3(1.0, 1.0, 1.0);',
-		'	float time = length(position);',
+		'	float maxSize = size * screenHeight * length(range.xy) / 1000.0;',
 
 		'	vec3 pos = position;',
-		//todo: offset pos by world position and then mod by range so particles repeat forever
+
+		// offset pos by world position and then mod by range so particles repeat forever
 		'	vec4 offset = modelMatrix * zero;',
-		'	pos.xz -= mod(offset.xz, 3000.0);',
+		'	pos.xz -= mod(offset.xz, range.xz);',
 
 			// time
-		'	float localTime = time + globalTime;',
+		'	float localTime = length(position) + globalTime;',
 		'	float modTime = mod( localTime, 1.0 );',
 		'	float accTime = modTime;// * modTime;',
 
-		'	pos.x += cos(modTime*8.0 + (position.z))*70.0;',
-		'	pos.z += sin(modTime*6.0 + (position.x))*100.0;',
+		'	pos.x += cos(modTime*8.0 + (position.z)) * 0.05 * range.x;',
+		'	pos.z += sin(modTime*6.0 + (position.x)) * 0.05 * range.y;',
 
 		'	vec3 animated = vec3( pos.x, pos.y * accTime, pos.z );',
 
-		'	vec4 mPosition = modelMatrix * vec4( animated, 1.0 );',
-
-		'	vec4 mvPosition = viewMatrix * mPosition;',
-
-		'	gl_PointSize = min(150.0, size * ( 150.0 / length( mvPosition.xyz ) ) );',
+		'	vec4 mvPosition = modelViewMatrix * vec4( animated, 1.0 );',
 
 		'	gl_Position = projectionMatrix * mvPosition;',
 
-		//todo: should fall off with distance from camera, not absolute world position
-		'	fAlpha = gl_Position.z * alphaFalloff;',
+		'	float distance = length( gl_Position.xyz );',
+
+		'	gl_PointSize = maxSize / distance;',
+
+		'	fAlpha = 1.0 - (distance * alphaFalloff);',
 
 		'}'
 	].join("\n"),
 	fragmentShader: [
-		'uniform vec3 color;',
 		'uniform sampler2D texture;',
-
-		'varying vec3 vColor;',
-		'varying float fAlpha;',
 
 		'void main() {',
 
-		'	gl_FragColor = vec4( color * vColor, fAlpha );',
-		'	gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );',
+		'	gl_FragColor = texture2D( texture, gl_PointCoord );',
+		'	gl_FragColor.rgb *= 0.47;',
 
 		'}'
 	].join("\n")
@@ -72,11 +64,7 @@ THREE.ShaderLib.snow = {
 THREE.Snow = function (options) {
 	var snowShader = THREE.ShaderLib.snow;
 	var uniforms = THREE.UniformsUtils.clone( snowShader.uniforms );
-	var attributes = {
-		//size:		 { type: 'f', value: [] },
-		//customColor: { type: 'c', value: [] },
-		//time:		 { type: 'f', value: [] },
-	};
+	var attributes = {};
 
 	var shaderMaterial = new THREE.ShaderMaterial( {
 		uniforms: 		uniforms,
@@ -94,9 +82,10 @@ THREE.Snow = function (options) {
 	var count = options.count || 10000;
 	var minSize = options.minSize || 50;
 	var sizeRange = (options.maxSize || 80) - minSize;
-	var range = options.range || new THREE.Vector3(3000, 1800, 3000);
+	var range = options.range || new THREE.Vector3(10, 10, 10);
 
 	uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
+	uniforms.range.value = [range.x, range.y, range.z];
 
 	var geometry = new THREE.BufferGeometry();
 	var vertices = [];
@@ -139,6 +128,14 @@ THREE.Snow = function (options) {
 		}
 
 		return uniforms.globalTime.value;
+	};
+
+	this.screenHeight = function (val) {
+		if (val !== undefined) {
+			uniforms.globalTime.screenHeight = val;
+		}
+
+		return uniforms.globalTime.screenHeight;
 	};
 
 	Object.defineProperty(this, 'visible', {

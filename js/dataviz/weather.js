@@ -21,15 +21,16 @@
 			}
 
 			snow = new THREE.Snow({
-				count: 100000,
-				minSize: 10,
-				maxSize: 20,
-				range: new THREE.Vector3(6000, 2000, 6000)
+				count: 50000,
+				range: new THREE.Vector3(500, 500, 500)
 			});
 			snow.particles.name = 'snow';
 			snow.particles.renderDepth = -100;
 			body.add(snow.particles);
 			snow.visible = false;
+		},
+		resize: function (width, height) {
+			snow.screenHeight(height);
 		},
 		update: function (tick) {
 			var delta = tick - lastTick;
@@ -38,7 +39,7 @@
 				delta = 1000/60;
 			}
 
-			snow.time(snow.time() + delta * 0.00005);
+			snow.time(snow.time() + delta * 0.00004);
 		},
 		activate: function () {
 			snow.visible = true;
