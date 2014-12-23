@@ -19,10 +19,6 @@ THREE.ShaderLib.snow = {
 
 		'	vec3 pos = position;',
 
-		// offset pos by world position and then mod by range so particles repeat forever
-		'	vec4 offset = modelMatrix * zero;',
-		'	pos.xz = mod(pos.xz + range.xz / 2.0 - offset.xz, range.xz) - range.xz / 2.0;',
-
 			// time
 		'	float localTime = length(position) + globalTime;',
 		'	float modTime = mod( localTime, 1.0 );',
@@ -33,9 +29,13 @@ THREE.ShaderLib.snow = {
 
 		'	vec3 animated = vec3( pos.x, pos.y * accTime, pos.z );',
 
-		'	vec4 mvPosition = modelViewMatrix * vec4( animated, 1.0 );',
+		'	vec4 mPosition = modelMatrix * vec4( animated, 1.0 );',
 
-		'	gl_Position = projectionMatrix * mvPosition;',
+		// offset mPosition by world position and then mod by range so particles repeat forever
+		'	vec4 offset = modelMatrix * zero;',
+		'	mPosition.xz = mod(mPosition.xz + range.xz / 2.0 - offset.xz, range.xz) - range.xz / 2.0;',
+
+		'	gl_Position = projectionMatrix * viewMatrix * mPosition;',
 
 		'	gl_PointSize = maxSize / length( gl_Position.xyz );',
 		'}'
