@@ -184,6 +184,12 @@
 			height *= devicePixelRatio;
 		}
 
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.resize) {
+				dataViz.resize(width, height);
+			}
+		});
+
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 		renderer.setSize(width / devicePixelRatio, height / devicePixelRatio);
@@ -453,7 +459,7 @@
 			if (dataViz.activate) {
 				dataViz.activate();
 			}
-		}
+		};
 
 		deactivateDataViz = function (name) {
 			var dataViz = dataVizes[name];
@@ -478,12 +484,14 @@
 				deactivateLayer(key);
 			});
 			defaultLayers.forEach(activateLayer);
-		}
+		};
 
 		window.dataViz = function (name, options) {
 			var active = (name in dataVizes),
 				dataViz = dataVizes[name],
-				lat, lon;
+				lat, lon,
+				width, height,
+				devicePixelRatio;
 
 			if (!name || !options || dataViz) {
 				return;
@@ -500,6 +508,7 @@
 				activate: options.activate,
 				deactivate: options.deactivate,
 				update: options.update,
+				resize: options.resize,
 				disableDepth: options.disableDepth,
 				resetDepth: options.resetDepth
 			};
@@ -538,6 +547,20 @@
 			if (options.init) {
 				options.init(scene);
 			}
+
+			if (dataViz.resize) {
+				width = window.innerWidth;
+				height = window.innerHeight;
+				devicePixelRatio = window.devicePixelRatio || 1;
+
+				if (!vrEffect.isFullscreen()) {
+					width *= devicePixelRatio;
+					height *= devicePixelRatio;
+				}
+
+				dataViz.resize(height, width);
+			}
+
 
 			notifyLayersLoaded(dataViz);
 
@@ -754,7 +777,7 @@
 		if (hash.height) {
 			DEFAULT_HEIGHT = Math.max(0.2, parseFloat(hash.height) || DEFAULT_HEIGHT);
 			dataVizes[''].height = DEFAULT_HEIGHT;
-			updateHeight(DEFAULT_HEIGHT)
+			updateHeight(DEFAULT_HEIGHT);
 		}
 
 		if (hash.loc) {
