@@ -3,6 +3,7 @@ THREE.ShaderLib.snow = {
 		color:		{ type: "c", value: new THREE.Color( 0x777777 ) },
 		texture:	{ type: "t", value: null },
 		globalTime:	{ type: "f", value: 0.0 },
+		size:	{ type: "f", value: 30.0 }, //todo: set this based on resolution
 		alphaFalloff:	{ type: "f", value: 1 / 1800.0 }
 	},
 	vertexShader: [
@@ -10,20 +11,24 @@ THREE.ShaderLib.snow = {
 		//'attribute float time;',
 		//'attribute vec3 customColor;',
 		'uniform float globalTime;',
+		'uniform float size;',
 
 		'uniform float alphaFalloff;',
 
 		'varying vec3 vColor;',
 		'varying float fAlpha;',
 
+		'const vec4 zero = vec4(0.0, 0.0, 0.0, 1.0);',
+
 		'void main() {',
 		//'	vColor = customColor;',
 		'	vColor = vec3(1.0, 1.0, 1.0);',
-		'	float size = 15.0;',
 		'	float time = length(position);',
 
 		'	vec3 pos = position;',
 		//todo: offset pos by world position and then mod by range so particles repeat forever
+		'	vec4 offset = modelMatrix * zero;',
+		'	pos.xz -= mod(offset.xz, 3000.0);',
 
 			// time
 		'	float localTime = time + globalTime;',
@@ -35,7 +40,9 @@ THREE.ShaderLib.snow = {
 
 		'	vec3 animated = vec3( pos.x, pos.y * accTime, pos.z );',
 
-		'	vec4 mvPosition = modelViewMatrix * vec4( animated, 1.0 );',
+		'	vec4 mPosition = modelMatrix * vec4( animated, 1.0 );',
+
+		'	vec4 mvPosition = viewMatrix * mPosition;',
 
 		'	gl_PointSize = min(150.0, size * ( 150.0 / length( mvPosition.xyz ) ) );',
 
@@ -87,7 +94,7 @@ THREE.Snow = function (options) {
 	var count = options.count || 10000;
 	var minSize = options.minSize || 50;
 	var sizeRange = (options.maxSize || 80) - minSize;
-	var range = options.range || new THREE.Vector3(3000, 3000, 1800);
+	var range = options.range || new THREE.Vector3(3000, 1800, 3000);
 
 	uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
 
