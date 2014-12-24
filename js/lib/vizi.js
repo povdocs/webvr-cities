@@ -8300,8 +8300,11 @@ if (typeof window === undefined) {
       var offset = new VIZI.Point();
       var shape = new THREE.Shape();
 
-      // TODO: Don't manually use first set of coordinates (index 0)
-      _.each(feature.outline[0], function(coord, index) {
+      var outer = feature.outline.shift();
+      var inners = feature.outline;
+
+      // Create outer shape
+      _.each(outer, function(coord, index) {
         var latLon = new VIZI.LatLon(coord[1], coord[0]);
         var geoCoord = project(latLon);
 
@@ -8321,6 +8324,25 @@ if (typeof window === undefined) {
         } else {
           shape.lineTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
         }
+      });
+
+      // Create inner shapes (holes)
+      _.each(inners, function(inner, index) {
+        var innerPath = new THREE.Path();
+        
+        _.each(inner, function(coord, index) {
+          var latLon = new VIZI.LatLon(coord[1], coord[0]);
+          var geoCoord = project(latLon);
+
+          // Move if first coordinate
+          if (index === 0) {
+            innerPath.moveTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
+          } else {
+            innerPath.lineTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
+          }
+        });
+
+        shape.holes.push(innerPath);
       });
 
       // TODO: Don't have random height logic in here
