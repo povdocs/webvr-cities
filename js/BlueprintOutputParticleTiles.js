@@ -75,9 +75,9 @@
       ' float localTime = length(position) + globalTime;',
       ' float modTime = mod( localTime, 1.0 );',
 
-      ' pos.x += cos(modTime*8.0 + (position.z)) * 0.05 * range.x;',
-      ' pos.y += cos(modTime*5.0 + (position.y)) * 0.05 * range.y;',
-      ' pos.z += sin(modTime*6.0 + (position.x)) * 0.05 * range.z;',
+      ' pos.x += cos(modTime*8.0 + position.z) * 0.02 * range.x;',
+      ' pos.y += cos(modTime*5.0 + position.y) * 0.02 * range.y;',
+      ' pos.z += sin(modTime*6.0 + position.x) * 0.02 * range.z;',
 
       ' vec4 mPosition = modelMatrix * vec4( pos, 1.0 );',
 
