@@ -660,7 +660,7 @@
 			}
 
 			locationCache[val] = null;
-			d3.json(url + val, function(error, response) {
+			d3.json(url + encodeURIComponent(val), function(error, response) {
 				var match,
 					callbacks;
 				if (error) {
@@ -759,8 +759,8 @@
 
 		hash = queries.reduce(function (previous, current) {
 			var split = current.split('='),
-				key = split[0],
-				val = split[1];
+				key = decodeURIComponent(split[0]),
+				val = decodeURIComponent(split[1]);
 
 			if (/^\s*\-?\d+(\.\d+)?\s*$/.test(val)) {
 				previous[key] = parseFloat(val);
