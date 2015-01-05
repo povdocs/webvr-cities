@@ -83,7 +83,7 @@
 
       ' gl_Position = projectionMatrix * viewMatrix * mPosition;',
 
-      ' gl_PointSize = maxSize / length( gl_Position.xyz );',
+      ' gl_PointSize = maxSize / gl_Position.z;',
       '}'
     ].join("\n"),
     fragmentShader: [
