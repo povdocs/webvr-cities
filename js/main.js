@@ -223,6 +223,8 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
+		viziWorld.onTick(delta);
+
 		//update hide active dataviz scenes that don't render depth
 		_.each(dataVizes, function (dataViz) {
 			if (dataViz && dataViz.active && dataViz.disableDepth) {

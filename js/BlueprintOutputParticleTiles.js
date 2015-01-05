@@ -123,7 +123,8 @@
     VIZI.BlueprintOutput.call(self, options);
 
     _.defaults(self.options, {
-      maxPopulation: 4000
+      maxPopulation: 4000,
+      timeScale: 0.00004
     });
 
     // Triggers and actions reference
@@ -168,13 +169,13 @@
       fragmentShader: snowShader.fragmentShader,
 
       //blending:     THREE.AdditiveBlending,
-      depthTest:    true,
+      depthTest:    false,
       transparent:  true
     });
 
     var count = options.count || 10000;
-    var minSize = options.minSize || 50;
-    var sizeRange = (options.maxSize || 80) - minSize;
+    // var minSize = options.minSize || 50;
+    // var sizeRange = (options.maxSize || 80) - minSize;
     var range = options.range || [50, 50, 50];
 
     uniforms.texture.value = THREE.ImageUtils.loadTexture( options.texture ); //todo: throw error if missing. or maybe a default?
@@ -228,6 +229,10 @@
     });
 
     self.emit("initialised", self.grids[grid.zoom].grid.tiles);
+  };
+
+  VIZI.BlueprintOutputParticleTiles.prototype.onTick = function(delta) {
+    this.uniforms.globalTime.value += delta * this.options.timeScale;
   };
 
   VIZI.BlueprintOutputParticleTiles.prototype.createGrid = function(gridOptions) {
