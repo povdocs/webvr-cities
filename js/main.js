@@ -622,6 +622,8 @@
 			lookTarget.z = cos * Math.sin(lookLongitude);
 			camera.lookAt(lookTarget);
 
+			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
+
 			if (locationName.firstChild) {
 				locationName.firstChild.nodeValue = loc.display_name;
 			} else {
