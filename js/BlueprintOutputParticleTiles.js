@@ -94,7 +94,7 @@
       'void main() {',
 
       ' vec4 pixel = texture2D( texture, gl_PointCoord );',
-      ' gl_FragColor = vColor * vec4(pixel.rgb, pixel.r);',
+      ' gl_FragColor = vColor * vec4(1.0, 1.0, 1.0, pixel.r);',
       //' gl_FragColor.rgb *= 0.47;',
 
       '}'
