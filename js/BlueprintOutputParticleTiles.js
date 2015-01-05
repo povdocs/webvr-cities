@@ -8,7 +8,7 @@
     uniforms: {
       texture:  { type: "t", value: null },
       globalTime: { type: "f", value: 0.0 },
-      size: { type: "f", value: 2 }, //????
+      size: { type: "f", value: 1.5 }, //????
       range: { type: "3f", value: [50, 50, 50] },
       screenHeight: { type: "f", value: 1080 },
       population: { type: "1fv", value: [1 / 7, 2 / 7, 3 / 7, 4 / 7, 5 / 7, 6 / 7, 1] }
