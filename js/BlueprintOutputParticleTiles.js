@@ -11,16 +11,14 @@
       size: { type: "f", value: 1.5 }, //????
       range: { type: "3f", value: [50, 50, 50] },
       screenHeight: { type: "f", value: 1080 },
-      population: { type: "1fv", value: [1 / 7, 2 / 7, 3 / 7, 4 / 7, 5 / 7, 6 / 7, 1] }
+      population: { type: "1fv", value: [1 / 5, 2 / 5, 3 / 5, 4 / 5, 5 / 5] }
     },
     vertexShader: [
-      //'#define COLORS %COLORS%',
-
       'uniform float globalTime;',
       'uniform float size;',
       'uniform float screenHeight;',
       'uniform vec3 range;',
-      'uniform float population[7];',
+      'uniform float population[5];',
 
       'attribute float popindex;',
 
@@ -71,6 +69,7 @@
 
       'void main() {',
 
+      // Colors hard-coded for now. Could be loaded in a uniform array
       ' if (popindex < population[0]) {',
           //white
       '   vColor = vec4(0.45, 0.698, 1.0, 1.0);',
@@ -78,31 +77,20 @@
           //black
       '   vColor = vec4(0.33, 1.0, 0.0, 1.0);',
       ' } else if (popindex < population[2]) {',
-          //American Indian and Alaska Native
-      '   vColor = vec4(0.33, 1.0, 0.0, 1.0);',
-      ' } else if (popindex < population[3]) {',
           //asian
       '   vColor = vec4(1.0, 0.0, 0.0, 1.0);',
+      ' } else if (popindex < population[3]) {',
+          //hispanic
+      '   vColor = vec4(1.0, 0.66, 0.0, 1.0);',
       ' } else if (popindex < population[4]) {',
-          //Native Hawaiian and Other Pacific Islander
-      //'   vColor = vec4(0.33, 1.0, 0.0, 1.0);',
-      ' } else if (popindex < population[5]) {',
-          //other
-      //'   vColor = vec4(0.33, 1.0, 0.0, 1.0);',
-      ' } else if (popindex < population[6]) {',
-          //black
-      //'   vColor = vec4(0.33, 1.0, 0.0, 1.0);',
+          //other/native american/multi-racial
+      '   vColor = vec4(0.53, 0.353, 0.27, 1.0);',
       ' } else {',
           //nobody
       '   vColor = vec4(0.0, 0.0, 0.0, 0.0);',
       '   gl_PointSize = 0.0;',
       '   return;',
       ' }',
-
-      // ' vColor = vec4(population[0], population[1], population[2], 1.0);',
-      // ' vColor.b -= vColor.g; vColor.g -= vColor.r;',
-
-      // ' vColor = vec4(popindex, popindex, popindex, 1.0);',
 
       ' float maxSize = size * screenHeight * length(range.xy) / 1000.0;',
 
@@ -471,10 +459,14 @@
     }
 
     tilePoints = features.map(function (point) {
+      var data = point.population.slice(0);
+      data.push(Math.max(0, point.total - data.reduce(function sum(prev, current) {
+        return prev + current;
+      })));
       return {
         x: point.coordinates[0] * precision,
         y: point.coordinates[1] * precision,
-        data: point.population,
+        data: data,
         total: point.total,
         id: point.id
       };

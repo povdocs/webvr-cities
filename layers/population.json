@@ -53,16 +53,13 @@
 				"transformation": {
 					"geometryType": "geometry.type",
 					"coordinates": "geometry.coordinates",
-					"total": "properties.DP0080001",
+					"total": "properties.DP0110001",
 					"id": "properties.GEOID10",
 					"population": [
-						"properties.DP0080003",
-						"properties.DP0080004",
-						"properties.DP0080005",
-						"properties.DP0080006",
-						"properties.DP0080014",
-						"properties.DP0080019",
-						"properties.DP0080020"
+						"properties.DP0110011",
+						"properties.DP0110012",
+						"properties.DP0110014",
+						"properties.DP0110002"
 					]
 				}
 			},
