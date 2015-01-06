@@ -123,8 +123,8 @@
       ' vec4 mPosition = modelMatrix * vec4( pos, 1.0 );',
 
       // offset pos by world position and then mod by range so particles repeat forever
-      ' mat4 mvInverse = inverse(modelMatrix);',
-      ' vec4 offset = mvInverse * zero;',
+      //' mat4 mvInverse = inverse(modelMatrix);',
+      //' vec4 offset = mvInverse * zero;',
 
       ' gl_Position = projectionMatrix * viewMatrix * mPosition;',
 
@@ -248,8 +248,6 @@
     );
 
     var particles = new THREE.PointCloud( geometry, shaderMaterial );
-    //particles.position.y = range[1] / 2;
-    particles.position.z = -range[2] / 2;
 
     particles.renderDepth = -100;
 
