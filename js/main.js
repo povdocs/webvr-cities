@@ -77,6 +77,7 @@
 
 		locationCache = {},
 		searchCallbacks = {},
+		queryHash = {},
 
 		stats,
 		lastTick = 0,
@@ -450,6 +451,7 @@
 
 			if (dataViz.latitude) {
 				searchLocation(dataViz.latitude + ', ' + dataViz.longitude);
+				updateQuery('loc', null);
 			}
 
 			body.rotation.y = dataViz.lookDirection || 0;
@@ -587,6 +589,7 @@
 
 		document.getElementById('visualization').addEventListener('change', function () {
 			activateDataViz(this.value);
+			updateQuery('viz', this.value);
 
 			this.blur();
 		});
@@ -780,47 +783,70 @@
 		}, false);
 	}
 
+	function updateQuery(field, val) {
+		var key, v, query = [],
+			url;
+
+		queryHash[field] = val;
+
+		for (key in queryHash) {
+			if (queryHash.hasOwnProperty(key)) {
+				v = queryHash[key];
+				if (v || typeof v === 'number') {
+					query.push(encodeURIComponent(key) + '=' + encodeURIComponent(v));
+				}
+			}
+		}
+
+		url = location.origin + location.pathname;
+		if (query.length) {
+			url += '?' + query.join('&');
+		}
+		url += location.hash;
+
+		history.pushState(queryHash, '', url);
+	}
+
 	function parseQuery() {
 		var search = window.location.search.substr(1),
 			queries = search.split('&'),
-			hash,
 			select = document.getElementById('visualization');
 
-		hash = queries.reduce(function (previous, current) {
+		queryHash = queries.reduce(function (previous, current) {
 			var split = current.split('='),
 				key = decodeURIComponent(split[0]),
 				val = decodeURIComponent(split[1]);
 
 			if (/^\s*\-?\d+(\.\d+)?\s*$/.test(val)) {
 				previous[key] = parseFloat(val);
-			} else {
+			} else if (val && split.length >= 2) {
 				previous[key] = val;
 			}
 
 			return previous;
 		}, {});
 
-		if (hash.speed > 0) {
-			MOVE_SPEED = hash.speed;
+		if (queryHash.speed > 0) {
+			MOVE_SPEED = queryHash.speed;
 			SLOW_SPEED = MOVE_SPEED / 4;
 		}
 
-		if (hash.height) {
-			DEFAULT_HEIGHT = Math.max(0.2, parseFloat(hash.height) || DEFAULT_HEIGHT);
+		if (queryHash.height) {
+			DEFAULT_HEIGHT = Math.max(0.2, parseFloat(queryHash.height) || DEFAULT_HEIGHT);
 			dataVizes[''].height = DEFAULT_HEIGHT;
 			updateHeight(DEFAULT_HEIGHT);
 		}
 
-		if (hash.loc) {
-			searchLocation(hash.loc);
+		if (queryHash.loc) {
+			searchLocation(queryHash.loc);
 		} else {
 			searchLocation(START_LOCATION);
 		}
 
-		if (hash.viz) {
-			select.value = hash.viz;
+		if (queryHash.viz) {
+			select.value = queryHash.viz;
 			if (select.selectedIndex >= 0) {
-				activateDataViz(hash.viz);
+				activateDataViz(queryHash.viz);
 			} else {
 				select.selectedIndex = 0;
 			}
@@ -937,10 +963,12 @@
 
 		searchbutton.addEventListener('click', function () {
 			searchLocation(locationInput.value);
+			updateQuery('loc', locationInput.value);
 		});
 		locationInput.addEventListener('keypress', function (evt) {
 			if (evt.keyCode === 13) {
 				searchLocation(locationInput.value);
+				updateQuery('loc', locationInput.value);
 				locationInput.blur();
 			}
 		});
