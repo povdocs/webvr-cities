@@ -242,8 +242,8 @@
 
     self.particles = particles;
     particles.name = 'particles';
-    self.world.camera.camera.parent.add(particles);
-    //self.object.add(particles);
+    self.world.camera.camera.parent.add(self.object);
+    self.object.add(particles);
 
     self.uniforms = uniforms;
     self.voronoi = new Voronoi();
