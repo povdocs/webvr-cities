@@ -695,7 +695,8 @@
 
 	function initControls() {
 		var qrCode,
-			connectionInfo = document.getElementById('connection-info');
+			connectionInfo = document.getElementById('connection-info'),
+			minimize = document.getElementById('minimize');
 
 		function lostConnection() {
 			var peer = walkControl.peer();
@@ -753,6 +754,20 @@
 		});
 
 		walkControl.connect(window.location.hash.substr(1));
+
+		minimize.addEventListener('click', function (evt) {
+			if (!connectionInfo.className) {
+				connectionInfo.className = 'min';
+				evt.stopPropagation();
+			}
+		}, false);
+
+		connectionInfo.addEventListener('click', function (evt) {
+			if (connectionInfo.className) {
+				connectionInfo.className = '';
+				evt.preventDefault();
+			}
+		}, false);
 	}
 
 	function parseQuery() {

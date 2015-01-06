@@ -116,9 +116,41 @@
 				/*border: rgba(100, 100, 100, 0.6) solid 2px;*/
 			}
 
+			#connection-info.min {
+				width: 20px;
+				height: 20px;
+			}
+
+			#connection-info.min #qrcode {
+				padding: 0;
+			}
+
 			#qrcode {
 				padding: 40px;
 				background-color: white;
+			}
+
+			#qrcode > img {
+				width: 100%;
+				height: 100%;
+			}
+
+			#minimize {
+				position: absolute;
+				width: 0px;
+				height: 0px;
+				top: 2px;
+				right: 2px;
+				border: 10px transparent solid;
+				border-top: 15px darkgrey solid;
+			}
+
+			#minimize:hover {
+				border-top: 15px black solid;
+			}
+
+			#connection-info.min #minimize {
+				display: none;
 			}
 
 			footer {
@@ -193,6 +225,7 @@
 			</article>
 		</div>
 		<div id="connection-info" style="display: none;">
+			<span id="minimize"></span>
 			<a id="link" target="_blank"><div id="qrcode"></div></a>
 		</div>
 		<footer>
