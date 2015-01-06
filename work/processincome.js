@@ -1,5 +1,5 @@
 var zoom = 12;
-var fs = require('fs');
+var fs = require('./node_modules/node-fs');
 var csv = require('fast-csv');
 var stream = fs.createReadStream('censusincome.csv');
 
@@ -58,7 +58,7 @@ var csvStream = csv
 			}
 			return;
 		}
-		var key = [zoom, x, y].join('-');
+		var key = [zoom, x, y].join('/');
 
 		var feature = {
 			type: 'Feature',
@@ -83,6 +83,8 @@ var csvStream = csv
 		} else {
 			tiles[key].push(feature);
 		}
+
+		most++;
 	})
 	.on("end", function(){
 		console.log("pre-processed", most);
@@ -102,14 +104,25 @@ var csvStream = csv
 				features: tiles[key]
 			};
 
-			fs.writeFile('incomedata/' + key+ '.json', JSON.stringify(collection), function(err) {
+			var path = key.split('/');
+			path.pop();
+			var dir = path.join('/');
+
+			fs.mkdir('incomedata/' + dir, 0777, true, function (err) {
 				if(err) {
-					console.log('file error', err);
+					console.log('directory error', err);
+					//next();
 				} else {
-					console.log('saved', key, ' (' + keys.length + ' left)');
+					fs.writeFile('incomedata/' + key+ '.json', JSON.stringify(collection), function(err) {
+						if(err) {
+							console.log('file error', err);
+						} else {
+							console.log('saved', key, ' (' + keys.length + ' left)');
+						}
+						//setImmediate(next);
+						next();
+					});
 				}
-				//setImmediate(next);
-				next();
 			});
 		}
 
