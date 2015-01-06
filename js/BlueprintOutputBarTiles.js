@@ -197,6 +197,9 @@
   // TODO: Is this running before the Blueprint is initialised and taking up unnecessary memory?
   // TODO: Find a better way to replicate World state (origin, origin zoom, CRS, etc) so it doesn't have to be duplicated for every Blueprint
   VIZI.BlueprintOutputBarTiles.prototype.outputBarTileWorker = function(origin, originZoom, options, data) {
+    if (!data.length) {
+      return;
+    }
     var self = this;
     var deferred = self.deferred();
 
