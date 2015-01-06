@@ -156,7 +156,8 @@
     VIZI.BlueprintOutput.call(self, options);
 
     _.defaults(self.options, {
-      maxPopulation: 4000,
+      maxDensity: 0.06,
+      minDensity: 0.002,
       timeScale: 0.00004
     });
 
@@ -419,7 +420,7 @@
         cells = this.diagram.cells,
         i, item, j,
         cum = 0,
-        max;
+        max, densityScale = 1;
 
       for (i = items.length - 1; i >= 0; i--) {
         item = items[i];
@@ -429,9 +430,10 @@
             self.lastLocationId = item.cell.site.id;
 
             // set shader values based on this data
-            max = Math.max(self.options.maxPopulation, item.cell.site.total);
+            max = Math.max(self.options.maxDensity * item.cell.site.area, item.cell.site.total);
+            densityScale = Math.max(1, self.options.minDensity / (item.cell.site.total / item.cell.site.area));
             for (j = 0; j < 7; j++) {
-              cum += item.cell.site.data[j] / max;
+              cum += item.cell.site.data[j] * densityScale / max;
               self.uniforms.population.value[j] = cum;
             }
 
@@ -467,6 +469,7 @@
         x: point.coordinates[0] * precision,
         y: point.coordinates[1] * precision,
         data: data,
+        area: point.area,
         total: point.total,
         id: point.id
       };

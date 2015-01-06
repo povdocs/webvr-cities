@@ -53,6 +53,7 @@
 				"transformation": {
 					"geometryType": "geometry.type",
 					"coordinates": "geometry.coordinates",
+					"area": "properties.ALAND10",
 					"total": "properties.DP0110001",
 					"id": "properties.GEOID10",
 					"population": [
