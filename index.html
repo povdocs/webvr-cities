@@ -37,9 +37,13 @@
 				position: absolute;
 				bottom: 44px;
 				/*left: 20px;*/
-				padding: 20px;
 				background-color: rgba(80, 80, 80, 0.6);
 				z-index: 2;
+				padding: 20px 20px 0 20px;
+			}
+
+			#controls > div {
+				padding-bottom: 20px;
 			}
 
 			#info {
@@ -67,8 +71,8 @@
 				text-shadow: 0 1px 0 rgba( 255,255,255,.2 ), 0 -1px 0 rgba( 0,0,0,.2 );
 			}
 
-			#info > article a,
-			#info > article a:visited {
+			a,
+			a:visited {
 				color: #eee;
 			}
 
@@ -89,11 +93,11 @@
 				margin: 0 0 4px;
 			}
 
-			#controls > * {
+			#buttons > * {
 				margin-left: 20px;
 			}
 
-			#controls > *:first-child {
+			#buttons > *:first-child {
 				margin-left: 0;
 			}
 
@@ -179,24 +183,31 @@
 				color: #ffffff;
 				text-decoration: none;
 			}
+
+			h2 {
+				font-size: 1em;
+			}
 		</style>
 	</head>
 	<body>
 		<div id="controls">
-			<button id="fs">FS</button>
-			<button id="vr" disabled>VR</button>
-			<span>
-				<input id="location" type="text" placeholder="Search for a location"/>
-				<button id="search">Go</button>
-			</span>
-			<select id="visualization">
-				<option value="">None</option>
-				<option value="income">Income Data (Bars)</option>
-				<option value="income-bubbles">Income Data (Bubbles)</option>
-				<option value="population">Population</option>
-				<option value="bike">Bike Ride</option>
-				<option value="police">Police Injury Claims</option>
-			</select>
+			<div id="dataviz-info">hello there</div>
+			<div id="buttons">
+				<button id="fs">FS</button>
+				<button id="vr" disabled>VR</button>
+				<span>
+					<input id="location" type="text" placeholder="Search for a location"/>
+					<button id="search">Go</button>
+				</span>
+				<select id="visualization">
+					<option value="">None</option>
+					<option value="income">Income Data (Bars)</option>
+					<option value="income-bubbles">Income Data (Bubbles)</option>
+					<option value="population">Population</option>
+					<option value="bike">Bike Ride</option>
+					<option value="police">Police Injury Claims</option>
+				</select>
+			</div>
 		</div>
 		<div id="info">
 			<svg version="1.1" id="infobutton" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="112px" height="112px" viewBox="0 0 112 112" enable-background="new 0 0 112 112" xml:space="preserve">

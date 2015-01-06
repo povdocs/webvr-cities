@@ -332,6 +332,7 @@
 				'buildings',
 				'map'//*/
 			],
+			info = document.getElementById('dataviz-info'),
 			layers = {};
 
 		function notifyLayersLoaded(dataViz) {
@@ -436,6 +437,7 @@
 			*/
 			if (dataViz === undefined) {
 				dataVizes[name] = null;
+				info.style.display = 'none';
 				script = document.createElement('script');
 				script.src = 'js/dataViz/' + name + '.js';
 				document.body.appendChild(script);
@@ -459,6 +461,13 @@
 					deactivateLayer(key);
 				}
 			});
+
+			if (dataViz.info) {
+				info.style.display = '';
+				info.innerHTML = dataViz.info;
+			} else {
+				info.style.display = 'none';
+			}
 
 			if (dataViz.activate) {
 				dataViz.activate();
@@ -507,6 +516,7 @@
 				notifiedLayers: false,
 				layers: {},
 				height: 0,
+				info: options.info,
 				lookDirection: options.lookDirection,
 				layersLoaded: options.layersLoaded,
 				activate: options.activate,
