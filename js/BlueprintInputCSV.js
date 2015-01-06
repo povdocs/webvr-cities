@@ -75,7 +75,7 @@
 
   // TODO: Cache a certain amount of tiles
   // TODO: Pull from cache if available
-  VIZI.BlueprintInputGeoJSON.prototype.requestTiles = function(tiles) {
+  VIZI.BlueprintInputCSV.prototype.requestTiles = function(tiles) {
     var self = this;
 
     if (!self.options.tilePath) {
