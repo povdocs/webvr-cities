@@ -3,7 +3,7 @@ var fullShapes = false;
 var shapefile = require('shapefile-stream'),
 	through = require('through2'),
 	simplify = require('simplify-js'),
-	fs = require('fs');
+	fs = require('node-fs');
 
 var quantization = 0.001,
 	hq = false,
@@ -99,13 +99,26 @@ function saveNextFile() {
 		features: features
 	};
 
-	fs.writeFile('scratch/censusdata/' + key + '.json', JSON.stringify(tile), function (err) {
-	  if (err) {
-	  	console.log(err, err.stack);
-	  	throw err;
-	  }
+	var path = key.split('/');
+	path.pop();
+	var dir = path.join('/');
 
-	  saveNextFile();
+	fs.mkdir('scratch/censusdata/' + dir, 0777, true, function (err) {
+		if(err) {
+			console.log('directory error', err);
+			//next();
+		} else {
+
+			fs.writeFile('scratch/censusdata/' + key + '.json', JSON.stringify(tile), function (err) {
+				if (err) {
+					console.log(err, err.stack);
+					throw err;
+				}
+
+				saveNextFile();
+			});
+
+		}
 	});
 }
 
@@ -148,7 +161,7 @@ shapefile.createReadStream( 'scratch/Tract_2010Census_DP1.shp' )
 
 			x = long2tile(longitude, ZOOM);
 			y = lat2tile(latitude, ZOOM);
-			key = [ZOOM, x, y].join('-');
+			key = [ZOOM, x, y].join('/');
 			if (tiles[key]) {
 				tiles[key].push(feature);
 			} else {

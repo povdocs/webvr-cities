@@ -1,5 +1,5 @@
 var zoom = 12;
-var fs = require('./node_modules/node-fs');
+var fs = require('node-fs');
 var csv = require('fast-csv');
 var stream = fs.createReadStream('censusincome.csv');
 
@@ -113,7 +113,7 @@ var csvStream = csv
 					console.log('directory error', err);
 					//next();
 				} else {
-					fs.writeFile('incomedata/' + key+ '.json', JSON.stringify(collection), function(err) {
+					fs.writeFile('incomedata/' + key + '.json', JSON.stringify(collection), function(err) {
 						if(err) {
 							console.log('file error', err);
 						} else {

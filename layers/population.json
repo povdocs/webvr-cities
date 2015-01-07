@@ -2,7 +2,7 @@
 	"input": {
 		"type": "BlueprintInputGeoJSON",
 		"options": {
-			"tilePath": "data/census/{z}-{x}-{y}.json"
+			"tilePath": "data/census/{z}/{x}/{y}.json"
 		}
 	},
 	"output": {
