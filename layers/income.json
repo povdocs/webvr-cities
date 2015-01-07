@@ -2,14 +2,14 @@
 	"input": {
 		"type": "BlueprintInputGeoJSON",
 		"options": {
-			"tilePath": "data/income/{z}-{x}-{y}.json"
+			"tilePath": "http://uscensusincome.s3-website-us-east-1.amazonaws.com/income/{z}/{x}/{y}.json"
 		}
 	},
 	"output": {
 		"type": "BlueprintOutputBarTiles",
 		"options": {
 			"grids": [{
-				"zoom": 10,
+				"zoom": 12,
 				"tilesPerDirection": 1,
 				"cullZoom": 8
 			}],
