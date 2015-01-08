@@ -101,7 +101,8 @@
 
 	function stopMoving() {
 		updatePosition();
-		if (!keys.w && !keys.a && !keys.s && !keys.d) {
+		if (!keys.w && !keys.a && !keys.s && !keys.d &&
+			!keys.forward && !keys.backward && !keys.left && !keys.right) {
 			moving = false;
 		}
 	}
@@ -892,24 +893,32 @@
 
 			if (evt.keyCode === 38) { //up
 				keys.forward = true;
+				keys.backward = false;
 				startMoving();
 			} else if (evt.keyCode === 40) { //down
 				keys.backward = true;
+				keys.forward = false;
 				startMoving();
 			} else if (evt.keyCode === 37) { //left
 				keys.left = true;
+				keys.right = false;
 				startMoving();
 			} else if (evt.keyCode === 39) { //right
 				keys.right = true;
+				keys.left = false;
 				startMoving();
 			} else if (evt.keyCode === 'W'.charCodeAt(0)) {
 				keys.w = true;
+				keys.s = false;
 			} else if (evt.keyCode === 'A'.charCodeAt(0)) {
 				keys.a = true;
+				keys.d = false;
 			} else if (evt.keyCode === 'S'.charCodeAt(0)) {
 				keys.s = true;
+				keys.w = false;
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = true;
+				keys.a = false;
 			} else if (evt.keyCode === 'Z'.charCodeAt(0)) {
 				vrControls.zeroSensor();
 			} else if (evt.keyCode === 'P'.charCodeAt(0)) {
@@ -940,12 +949,16 @@
 				stopMoving();
 			} else if (evt.keyCode === 'W'.charCodeAt(0)) {
 				keys.w = false;
+				stopMoving();
 			} else if (evt.keyCode === 'A'.charCodeAt(0)) {
 				keys.a = false;
+				stopMoving();
 			} else if (evt.keyCode === 'S'.charCodeAt(0)) {
 				keys.s = false;
+				stopMoving();
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = false;
+				stopMoving();
 			}
 		}, false);
 
