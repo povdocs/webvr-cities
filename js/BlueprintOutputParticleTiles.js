@@ -11,7 +11,7 @@
       size: { type: "f", value: 1.5 }, //????
       range: { type: "3f", value: [50, 50, 50] },
       screenHeight: { type: "f", value: 1080 },
-      population: { type: "1fv", value: [1 / 5, 2 / 5, 3 / 5, 4 / 5, 5 / 5] }
+      population: { type: "1fv", value: [0, 0, 0, 0, 0] }
     },
     vertexShader: [
       'uniform float globalTime;',
