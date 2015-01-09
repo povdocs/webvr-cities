@@ -322,9 +322,15 @@
 		});
 
 		vrEffect.addEventListener('devicechange', function () {
-			if (vrEffect.hmd()) {
+			var hmd = vrEffect.hmd(),
+				info = document.getElementById('hmd-info');
+
+			if (hmd) {
 				vrButton.disabled = false;
 			}
+
+			info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
+			info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
 		});
 	}
 
