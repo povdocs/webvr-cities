@@ -18,7 +18,6 @@
 		camera,
 		body,
 		pointer,
-		compass,
 		scene,
 		renderer,
 		vrEffect,
@@ -234,6 +233,7 @@
 			}
 		});
 
+		pointer.visible = false;
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
 
@@ -244,6 +244,7 @@
 			}
 		});
 
+		pointer.visible = true;
 		scene.overrideMaterial = null;
 		vrEffect.render(scene, camera, sceneTarget, true);
 
