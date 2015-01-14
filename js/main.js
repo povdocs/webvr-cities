@@ -474,7 +474,8 @@
 
 			if (dataViz.info) {
 				info.style.display = '';
-				info.innerHTML = dataViz.info;
+				info.innerHTML = '';
+				info.appendChild(dataViz.info);
 			} else {
 				info.style.display = 'none';
 			}
@@ -526,7 +527,7 @@
 				notifiedLayers: false,
 				layers: {},
 				height: 0,
-				info: options.info,
+				info: null,
 				lookDirection: options.lookDirection,
 				layersLoaded: options.layersLoaded,
 				activate: options.activate,
@@ -552,14 +553,25 @@
 
 			if (options.layers) {
 				_.each(options.layers, function (layer, key) {
-					if (typeof layer === 'string' && typeof key === 'number') {
-						key = layer;
-						layer = true;
+					if (typeof key === 'number') {
+						if (typeof layer === 'string') {
+							key = layer;
+							layer = true;
+						} else {
+							key = name + key;
+						}
 					}
 					dataViz.layers[key] = !!layer;
 
 					if (layer) {
 						if (typeof layer === 'object') {
+							layers[key] = {
+								name: key,
+								object: null,
+								switchboard: null,
+								active: false
+							};
+
 							loadLayer(key, layer);
 						} else {
 							requestLayer(key);
@@ -570,6 +582,15 @@
 
 			if (options.init) {
 				options.init(scene);
+			}
+
+			if (options.info) {
+				if (typeof options.info === 'string') {
+					dataViz.info = document.createElement('div');
+					dataViz.info.innerHTML = options.info;
+				} else {
+					dataViz.info = options.info;
+				}
 			}
 
 			if (dataViz.resize) {
@@ -643,7 +664,7 @@
 			lookTarget.z = cos * Math.sin(lookLongitude);
 			camera.lookAt(lookTarget);
 
-			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
+			VIZI.Messenger.emit('controls:move', pos);
 
 			if (locationName.firstChild) {
 				locationName.firstChild.nodeValue = loc.display_name;
