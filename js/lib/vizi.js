@@ -8685,7 +8685,15 @@ if (typeof window === undefined) {
 
     VIZI.BlueprintOutput.call(self, options);
 
-    _.defaults(self.options, {});
+    _.defaults(self.options, {
+      materialType: "LineBasicMaterial",
+      materialOptions: {}
+    });
+
+    _.defaults(self.options.materialOptions, {
+      color: 0xff0000,
+      linewidth: 3
+    });
 
     // Triggers and actions reference
     self.triggers = [
@@ -8715,10 +8723,13 @@ if (typeof window === undefined) {
   VIZI.BlueprintOutputDebugLines.prototype.outputLines = function(data) {
     var self = this;
 
-    var material = new THREE.LineBasicMaterial({
-      color: 0xff0000,
-      linewidth: 3
-    });
+    var materialType = self.options.materialType;
+    if (!materialType || typeof THREE[materialType] !== "function") {
+      materialType = "LineBasicMaterial";
+    }
+
+    var materialOptions = _.clone(self.options.materialOptions);
+    var material = new THREE[materialType](materialOptions);
 
     var geom = new THREE.Geometry();
 
@@ -8735,7 +8746,7 @@ if (typeof window === undefined) {
       }
 
       // TODO: Get this from options
-      var height = point.height || 10;
+      var height = point.height || self.options.height || 10;
 
       // Multiply height in meters by pixels per meter ratio at latitude
       height *= pixelsPerMeter.y;
