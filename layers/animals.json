@@ -1,0 +1,75 @@
+{
+	"input": {
+		"type": "BlueprintInputGeoJSON",
+		"options": {
+			"tilePath": "data/animals/{z}/{x}/{y}.json"
+		}
+	},
+	"output": {
+		"type": "BlueprintOutputRandomObjects",
+		"options": {
+			"grids": [{
+				"zoom": 14,
+				"tilesPerDirection": 1,
+				"cullZoom": 8
+			}],
+			"workerURL": "js/lib/vizi-worker.js",
+
+			"scaleHeight": 0.000001,
+			"radius": 10,
+
+			"materialType": "MeshBasicMaterial",
+			"materialOptions": {
+				"color": 15597568
+			}
+		}
+	},
+	"triggers": [{
+		"triggerObject": "output",
+		"triggerName": "initialised",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "output",
+		"triggerName": "gridUpdated",
+		"triggerArguments": ["tiles"],
+		"actionObject": "input",
+		"actionName": "requestTiles",
+		"actionArguments": ["tiles"],
+		"actionOutput": {
+			"tiles": "tiles"
+		}
+	}, {
+		"triggerObject": "input",
+		"triggerName": "tileReceived",
+		"triggerArguments": ["geoJSON", "tile"],
+		"actionObject": "output",
+		"actionName": "outputObjectsTile",
+		"actionArguments": ["data", "tile"],
+		"actionOutput": {
+			"data": {
+				"process": "map",
+				"itemsObject": "geoJSON",
+				"itemsProperties": "features",
+				"transformation": {
+					"geometryType": "geometry.type",
+					"coordinates": "geometry.coordinates",
+					"area": "properties.area",
+					"county": "properties.county",
+					"height": "properties.chickens",
+					"quantity": ["properties.goats"],
+					"hogs": "properties.hogs",
+					"turkeys": "properties.turkeys",
+					"equine": "properties.equine",
+					"chickens": "properties.chickens"
+				}
+			},
+			"tile": "tile"
+		}
+	}]
+}
