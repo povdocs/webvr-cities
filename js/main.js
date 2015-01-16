@@ -342,6 +342,7 @@
 				'map'//*/
 			],
 			info = document.getElementById('dataviz-info'),
+			select = document.getElementById('visualization'),
 			layers = {};
 
 		function notifyLayersLoaded(dataViz) {
@@ -616,14 +617,22 @@
 
 		defaultLayers.forEach(activateLayer);
 
-		document.getElementById('visualization').addEventListener('change', function () {
+		select.addEventListener('change', function () {
 			activateDataViz(this.value);
 			updateQuery('viz', this.value);
 
 			this.blur();
 		});
 
-		//todo: load from query. activateDataViz('weather');
+		window.addEventListener('keydown', function (evt) {
+			var diff = evt.which === 33 ? -1 : (evt.which === 34 ? 1 : 0);
+			if (diff) {
+				select.selectedIndex = (select.options.length + select.selectedIndex + diff) % select.options.length;
+
+				activateDataViz(select.value);
+				updateQuery('viz', select.value);
+			}
+		});
 	}
 
 	function initVizi() {
