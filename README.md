@@ -1,4 +1,4 @@
-# WebVR City Visualization
+# WebVR City Data Visualization
 
 [View Demo](http://povdocs.github.io/webvr-cities/)
 
