@@ -448,7 +448,7 @@
 				dataVizes[name] = null;
 				info.style.display = 'none';
 				script = document.createElement('script');
-				script.src = 'js/dataViz/' + name + '.js';
+				script.src = 'js/dataviz/' + name + '.js';
 				document.body.appendChild(script);
 				return;
 			}
