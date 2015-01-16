@@ -7662,7 +7662,7 @@ if (typeof window === undefined) {
     }
 
     // Request data
-    d3.xml(self.options.path, function(error, data) {
+    d3.xml(self.options.path, 'text/xml', function(error, data) {
       if (error) {
         if (VIZI.DEBUG) console.log("Failed to request GPX data");
         console.warn(error);
