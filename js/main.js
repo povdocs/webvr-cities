@@ -1,14 +1,11 @@
 (function () {
-	var initialCameraPosition = {
-			x: 0,
-			y: 130,
-			z: 0
-		},
-
-		PEER_API_KEY = 'evy8rcz8vdy22o6r',
+	var PEER_API_KEY = 'evy8rcz8vdy22o6r',
 
 		START_LOCATION = 'Times Square, New York',
+		START_LAT = 40.7564812,
+		START_LON = -73.9861832,
 
+		DEFAULT_HEIGHT = 130,
 		FOG = 250,
 		MOVE_SPEED = 80,
 		SLOW_SPEED = MOVE_SPEED / 4,
@@ -21,7 +18,6 @@
 		camera,
 		body,
 		pointer,
-		compass,
 		scene,
 		renderer,
 		vrEffect,
@@ -29,6 +25,7 @@
 		vrMouse,
 		walkControl,
 		cityContainer,
+
 		//octree, //for picking, collision detection
 		rayCaster = new THREE.Raycaster(),
 
@@ -39,6 +36,12 @@
 
 		//VIZI stuff
 		viziWorld,
+
+		dataVizes = {
+			'': {
+				height: DEFAULT_HEIGHT
+			}
+		},
 
 		keys = {
 			forward: false,
@@ -72,9 +75,15 @@
 		locationInput = document.getElementById('location'),
 
 		locationCache = {},
+		searchCallbacks = {},
+		queryHash = {},
 
 		stats,
-		clock = new THREE.Clock();
+		lastTick = 0,
+		clock = new THREE.Clock(),
+
+		activateDataViz,
+		deactivateDataViz;
 
 	function startMoving() {
 		if (!moving) {
@@ -91,8 +100,18 @@
 
 	function stopMoving() {
 		updatePosition();
-		if (!keys.w && !keys.a && !keys.s && !keys.d) {
+		if (!keys.w && !keys.a && !keys.s && !keys.d &&
+			!keys.forward && !keys.backward && !keys.left && !keys.right) {
 			moving = false;
+		}
+	}
+
+	function updateHeight(height) {
+		MOVE_SPEED = Math.max(5, 180 * height / 100);
+		SLOW_SPEED = Math.max(5, 180 / 4 * height / 100);
+		if (body) {
+			body.position.y = height;
+			walkControl.speed(MOVE_SPEED);
 		}
 	}
 
@@ -166,6 +185,12 @@
 			height *= devicePixelRatio;
 		}
 
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.resize) {
+				dataViz.resize(width, height);
+			}
+		});
+
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 		renderer.setSize(width / devicePixelRatio, height / devicePixelRatio);
@@ -178,7 +203,15 @@
 	}
 
 	function render() {
-		var tick = Date.now();
+		var tick = Date.now(),
+			delta = tick - lastTick;
+
+		//update any active dataviz scenes
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.update) {
+				dataViz.update(tick);
+			}
+		});
 
 		//Mediator.publish('update', tick - lastTick, lastTick);
 
@@ -191,9 +224,27 @@
 			VIZI.Messenger.emit('controls:move', new VIZI.Point(body.position.x, body.position.z));
 		}
 
+		viziWorld.onTick(delta);
+
+		//update hide active dataviz scenes that don't render depth
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.disableDepth) {
+				dataViz.disableDepth();
+			}
+		});
+
+		pointer.visible = false;
 		scene.overrideMaterial = depthMaterial;
 		vrEffect.render(scene, camera, depthTarget, true);
 
+		//reset hide active dataviz scenes that don't render depth
+		_.each(dataVizes, function (dataViz) {
+			if (dataViz && dataViz.active && dataViz.resetDepth) {
+				dataViz.resetDepth();
+			}
+		});
+
+		pointer.visible = true;
 		scene.overrideMaterial = null;
 		vrEffect.render(scene, camera, sceneTarget, true);
 
@@ -210,14 +261,14 @@
 		renderer = new THREE.WebGLRenderer();
 
 		body = new THREE.Object3D();
-		body.position.x = initialCameraPosition.x;
-		body.position.y = initialCameraPosition.y;
-		body.position.z = initialCameraPosition.z;
+		body.name = 'body';
+		body.position.y = DEFAULT_HEIGHT;
 		scene.add(body);
 
 		body.add(camera);
 
 		pointer = new THREE.Object3D();
+		pointer.name = 'pointer';
 		pointer.position.y = -5;
 		pointer.add(
 			//todo: make a better-looking pointer
@@ -272,21 +323,313 @@
 		});
 
 		vrEffect.addEventListener('devicechange', function () {
-			if (vrEffect.hmd()) {
+			var hmd = vrEffect.hmd(),
+				info = document.getElementById('hmd-info');
+
+			if (hmd) {
 				vrButton.disabled = false;
 			}
+
+			info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
+			info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
 		});
 	}
 
-	function initVizi() {
-		var layers = [
-			'buildings',
-			'map'
-		];
+	function initDataViz() {
+		var defaultLayers = [
+				//'population'/*,
+				'buildings',
+				'map'//*/
+			],
+			info = document.getElementById('dataviz-info'),
+			layers = {};
 
+		function notifyLayersLoaded(dataViz) {
+			var k,
+				layer,
+				layerParams = {};
+
+			if (!dataViz || dataViz.notifiedLayers) {
+				return;
+			}
+
+			if (!dataViz.layersLoaded) {
+				dataViz.notifiedLayers = true;
+				return;
+			}
+
+			for (k in dataViz.layers) {
+				if (dataViz.layers.hasOwnProperty(k) && dataViz.layers[k]) {
+					layer = layers[k];
+					if (!layer || !layer.switchboard) {
+						return;
+					}
+					layerParams[k] = layer;
+				}
+			}
+
+			dataViz.layersLoaded(layerParams);
+
+			dataViz.notifiedLayers = true;
+		}
+
+		function loadLayer(name, obj) {
+			var layer = layers[name],
+				switchboard = new VIZI.BlueprintSwitchboard(obj);
+
+			switchboard.addToWorld(viziWorld);
+			layer.switchboard = switchboard;
+			layer.object = switchboard.output.object;
+		}
+
+		function requestLayer(name) {
+			var layer = layers[name];
+			if (!layer) {
+				layer = layers[name] = {
+					name: name,
+					object: null,
+					switchboard: null,
+					active: false
+				};
+
+				d3.json('layers/' + name + '.json', function(error, data) {
+					if (error) {
+						console.warn(error);
+						return;
+					}
+
+					loadLayer(name, data);
+					if (layer.object) {
+						layer.object.visible = layer.active;
+					}
+
+					//notify any dataviz objects that have requested layers
+					_.each(dataVizes, notifyLayersLoaded);
+				});
+			}
+		}
+
+		function activateLayer(name) {
+			var layer = layers[name];
+
+			if (!layer) {
+				requestLayer(name);
+			} else  if (layer.object) {
+				layer.object.visible = true;
+			}
+			layers[name].active = true;
+		}
+
+		function deactivateLayer(name) {
+			var layer = layers[name];
+			if (layer) {
+				layer.active = false;
+				if (layer.object) {
+					layer.object.visible = false;
+				}
+			}
+		}
+
+		activateDataViz = function (name) {
+			var script,
+				dataViz = dataVizes[name];
+
+			_.each(dataVizes, function (dataViz, id) {
+				if (name !== id) {
+					deactivateDataViz(id);
+				}
+			});
+
+			/*
+			Would like to use something like requirejs to load script,
+			but it's not compatible with vizicities at the moment
+			*/
+			if (dataViz === undefined) {
+				dataVizes[name] = null;
+				info.style.display = 'none';
+				script = document.createElement('script');
+				script.src = 'js/dataViz/' + name + '.js';
+				document.body.appendChild(script);
+				return;
+			}
+
+			dataViz.active = true;
+
+			updateHeight(dataViz.height);
+
+			if (dataViz.latitude) {
+				searchLocation(dataViz.latitude + ', ' + dataViz.longitude);
+				updateQuery('loc', null);
+			}
+
+			body.rotation.y = dataViz.lookDirection || 0;
+
+			_.each(dataViz.layers, function (layer, key) {
+				if (layer) {
+					activateLayer(key);
+				} else {
+					deactivateLayer(key);
+				}
+			});
+
+			if (dataViz.info) {
+				info.style.display = '';
+				info.innerHTML = '';
+				info.appendChild(dataViz.info);
+			} else {
+				info.style.display = 'none';
+			}
+
+			if (dataViz.activate) {
+				dataViz.activate();
+			}
+		};
+
+		deactivateDataViz = function (name) {
+			var dataViz = dataVizes[name];
+
+			if (!dataViz) {
+				delete dataVizes[name];
+				return;
+			}
+
+			if (!dataViz.active) {
+				// nothing to do
+				return;
+			}
+
+			dataViz.active = false;
+
+			if (dataViz.deactivate) {
+				dataViz.deactivate();
+			}
+
+			_.each(dataViz.layers, function (layer, key) {
+				deactivateLayer(key);
+			});
+			defaultLayers.forEach(activateLayer);
+		};
+
+		window.dataViz = function (name, options) {
+			var active = (name in dataVizes),
+				dataViz = dataVizes[name],
+				lat, lon,
+				width, height,
+				devicePixelRatio;
+
+			if (!name || !options || dataViz) {
+				return;
+			}
+
+			dataViz = dataVizes[name] = {
+				name: name,
+				active: false,
+				notifiedLayers: false,
+				layers: {},
+				height: 0,
+				info: null,
+				lookDirection: options.lookDirection,
+				layersLoaded: options.layersLoaded,
+				activate: options.activate,
+				deactivate: options.deactivate,
+				update: options.update,
+				resize: options.resize,
+				disableDepth: options.disableDepth,
+				resetDepth: options.resetDepth
+			};
+
+			defaultLayers.forEach(function (layerName) {
+				dataViz.layers[layerName] = true;
+			});
+
+			dataViz.height = Math.max(2, parseFloat(options.height) || DEFAULT_HEIGHT);
+			lat = parseFloat(options.latitude);
+			lon = parseFloat(options.longitude);
+
+			if (Math.abs(lat) < 90 && !isNaN(lon) && lon !== Infinity && lon !== -Infinity) {
+				dataViz.latitude = lat;
+				dataViz.longitude = lon;
+			}
+
+			if (options.layers) {
+				_.each(options.layers, function (layer, key) {
+					if (typeof key === 'number') {
+						if (typeof layer === 'string') {
+							key = layer;
+							layer = true;
+						} else {
+							key = name + key;
+						}
+					}
+					dataViz.layers[key] = !!layer;
+
+					if (layer) {
+						if (typeof layer === 'object') {
+							layers[key] = {
+								name: key,
+								object: null,
+								switchboard: null,
+								active: false
+							};
+
+							loadLayer(key, layer);
+						} else {
+							requestLayer(key);
+						}
+					}
+				});
+			}
+
+			if (options.init) {
+				options.init(scene);
+			}
+
+			if (options.info) {
+				if (typeof options.info === 'string') {
+					dataViz.info = document.createElement('div');
+					dataViz.info.innerHTML = options.info;
+				} else {
+					dataViz.info = options.info;
+				}
+			}
+
+			if (dataViz.resize) {
+				width = window.innerWidth;
+				height = window.innerHeight;
+				devicePixelRatio = window.devicePixelRatio || 1;
+
+				if (!vrEffect.isFullscreen()) {
+					width *= devicePixelRatio;
+					height *= devicePixelRatio;
+				}
+
+				dataViz.resize(height, width);
+			}
+
+
+			notifyLayersLoaded(dataViz);
+
+			if (active) {
+				activateDataViz(name);
+			}
+		};
+
+		defaultLayers.forEach(activateLayer);
+
+		document.getElementById('visualization').addEventListener('change', function () {
+			activateDataViz(this.value);
+			updateQuery('viz', this.value);
+
+			this.blur();
+		});
+
+		//todo: load from query. activateDataViz('weather');
+	}
+
+	function initVizi() {
 		viziWorld = new VIZI.World({
 			viewport: document.body,
-			center: new VIZI.LatLon(40.7564812, -73.9861832),
+			center: new VIZI.LatLon(START_LAT, START_LON),
 			//zoom: 19,
 			suppressRenderer: true
 		});
@@ -298,23 +641,9 @@
 		camera.rotation.set(0, 0, 0);
 		camera.near = NEAR;
 		camera.far = FAR;
-
-		layers.forEach(function (layer) {
-			d3.json('layers/' + layer + '.json', function(error, data) {
-				var switchboard;
-
-				if (error) {
-					console.warn(error);
-					return;
-				}
-
-				switchboard = new VIZI.BlueprintSwitchboard(data);
-				switchboard.addToWorld(viziWorld);
-			});
-		});
 	}
 
-	function searchLocation(val) {
+	function searchLocation(val, callback) {
 		var locationName = document.getElementById('location-name');
 
 		function changeLocation(loc) {
@@ -334,6 +663,8 @@
 			lookTarget.x = cos * Math.cos(lookLongitude);
 			lookTarget.z = cos * Math.sin(lookLongitude);
 			camera.lookAt(lookTarget);
+
+			VIZI.Messenger.emit('controls:move', pos);
 
 			if (locationName.firstChild) {
 				locationName.firstChild.nodeValue = loc.display_name;
@@ -355,23 +686,50 @@
 			loc = locationCache[val];
 			if (loc) {
 				changeLocation(loc);
+				if (callback) {
+					callback(loc);
+				}
 				return;
 			}
+
+			if (callback) {
+				if (searchCallbacks[val]) {
+					searchCallbacks[val].push(callback);
+				} else {
+					searchCallbacks[val] = [callback];
+				}
+			}
+
 			if (loc === null) {
 				//query in progress
 				return;
 			}
 
 			locationCache[val] = null;
-			d3.json(url + val, function(error, response) {
+			d3.json(url + encodeURIComponent(val), function(error, response) {
+				var match,
+					callbacks;
 				if (error) {
 					console.warn('Location search failed', val, error);
 					return;
 				}
 
-				if (response && response[0] && response[0].lat && response[0].lon) {
-					locationCache[val] = response[0];
-					changeLocation(locationCache[val]);
+				response = response && response[0];
+				if (response && response.lat && response.lon) {
+					match = /([\-+]?\d+(?:\.\d*)?)[, ]\s*([\-+]?\d+(?:\.\d*))?/.exec(val);
+					if (match) {
+						response.lat = parseFloat(match[1]);
+						response.lon = parseFloat(match[2]);
+					}
+					locationCache[val] = response;
+					changeLocation(response);
+
+					callbacks = searchCallbacks[val];
+					if (callbacks) {
+						while (callbacks.length) {
+							callbacks.shift()(response);
+						}
+					}
 				}
 			});
 		}
@@ -379,7 +737,8 @@
 
 	function initControls() {
 		var qrCode,
-			connectionInfo = document.getElementById('connection-info');
+			connectionInfo = document.getElementById('connection-info'),
+			minimize = document.getElementById('minimize');
 
 		function lostConnection() {
 			var peer = walkControl.peer();
@@ -437,43 +796,94 @@
 		});
 
 		walkControl.connect(window.location.hash.substr(1));
+
+		minimize.addEventListener('click', function (evt) {
+			if (!connectionInfo.className) {
+				connectionInfo.className = 'min';
+				evt.stopPropagation();
+			}
+		}, false);
+
+		connectionInfo.addEventListener('click', function (evt) {
+			if (connectionInfo.className) {
+				connectionInfo.className = '';
+				evt.preventDefault();
+			}
+		}, false);
+	}
+
+	function updateQuery(field, val) {
+		var key, v, query = [],
+			url;
+
+		queryHash[field] = val;
+
+		for (key in queryHash) {
+			if (queryHash.hasOwnProperty(key)) {
+				v = queryHash[key];
+				if (v || typeof v === 'number') {
+					query.push(encodeURIComponent(key) + '=' + encodeURIComponent(v));
+				}
+			}
+		}
+
+		url = location.origin + location.pathname;
+		if (query.length) {
+			url += '?' + query.join('&');
+		}
+		url += location.hash;
+
+		history.pushState(queryHash, '', url);
 	}
 
 	function parseQuery() {
 		var search = window.location.search.substr(1),
 			queries = search.split('&'),
-			hash;
+			select = document.getElementById('visualization');
 
-		hash = queries.reduce(function (previous, current) {
+		queryHash = queries.reduce(function (previous, current) {
 			var split = current.split('='),
-				key = split[0],
-				val = split[1];
+				key = decodeURIComponent(split[0]),
+				val = decodeURIComponent(split[1]);
 
 			if (/^\s*\-?\d+(\.\d+)?\s*$/.test(val)) {
 				previous[key] = parseFloat(val);
-			} else {
+			} else if (val && split.length >= 2) {
 				previous[key] = val;
 			}
 
 			return previous;
 		}, {});
 
-		if (hash.height) {
-			initialCameraPosition.y = hash.height;
+		if (queryHash.speed > 0) {
+			MOVE_SPEED = queryHash.speed;
+			SLOW_SPEED = MOVE_SPEED / 4;
 		}
 
-		if (hash.speed > 0) {
-			MOVE_SPEED = hash.speed;
+		if (queryHash.height) {
+			DEFAULT_HEIGHT = Math.max(0.2, parseFloat(queryHash.height) || DEFAULT_HEIGHT);
+			dataVizes[''].height = DEFAULT_HEIGHT;
+			updateHeight(DEFAULT_HEIGHT);
 		}
 
-		if (hash.loc) {
-			searchLocation(hash.loc);
+		if (queryHash.loc) {
+			searchLocation(queryHash.loc);
 		} else {
 			searchLocation(START_LOCATION);
+		}
+
+		if (queryHash.viz) {
+			select.value = queryHash.viz;
+			if (select.selectedIndex >= 0) {
+				activateDataViz(queryHash.viz);
+			} else {
+				select.selectedIndex = 0;
+			}
 		}
 	}
 
 	function init() {
+		initDataViz();
 		parseQuery();
 		initVizi();
 		initScene();
@@ -511,24 +921,32 @@
 
 			if (evt.keyCode === 38) { //up
 				keys.forward = true;
+				keys.backward = false;
 				startMoving();
 			} else if (evt.keyCode === 40) { //down
 				keys.backward = true;
+				keys.forward = false;
 				startMoving();
 			} else if (evt.keyCode === 37) { //left
 				keys.left = true;
+				keys.right = false;
 				startMoving();
 			} else if (evt.keyCode === 39) { //right
 				keys.right = true;
+				keys.left = false;
 				startMoving();
 			} else if (evt.keyCode === 'W'.charCodeAt(0)) {
 				keys.w = true;
+				keys.s = false;
 			} else if (evt.keyCode === 'A'.charCodeAt(0)) {
 				keys.a = true;
+				keys.d = false;
 			} else if (evt.keyCode === 'S'.charCodeAt(0)) {
 				keys.s = true;
+				keys.w = false;
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = true;
+				keys.a = false;
 			} else if (evt.keyCode === 'Z'.charCodeAt(0)) {
 				vrControls.zeroSensor();
 			} else if (evt.keyCode === 'P'.charCodeAt(0)) {
@@ -559,12 +977,16 @@
 				stopMoving();
 			} else if (evt.keyCode === 'W'.charCodeAt(0)) {
 				keys.w = false;
+				stopMoving();
 			} else if (evt.keyCode === 'A'.charCodeAt(0)) {
 				keys.a = false;
+				stopMoving();
 			} else if (evt.keyCode === 'S'.charCodeAt(0)) {
 				keys.s = false;
+				stopMoving();
 			} else if (evt.keyCode === 'D'.charCodeAt(0)) {
 				keys.d = false;
+				stopMoving();
 			}
 		}, false);
 
@@ -582,10 +1004,12 @@
 
 		searchbutton.addEventListener('click', function () {
 			searchLocation(locationInput.value);
+			updateQuery('loc', locationInput.value);
 		});
 		locationInput.addEventListener('keypress', function (evt) {
 			if (evt.keyCode === 13) {
 				searchLocation(locationInput.value);
+				updateQuery('loc', locationInput.value);
 				locationInput.blur();
 			}
 		});

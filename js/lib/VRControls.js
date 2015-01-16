@@ -18,13 +18,15 @@ THREE.VRControls = function ( object, options ) {
 	var pollTimeout;
 
 	function gotVRDevices( devices ) {
-		var vrInput;
-		var error;
-		for ( var i = 0; i < devices.length; ++i ) {
-			if ( devices[i] instanceof PositionSensorVRDevice &&
-					( !sensorDevice || devices[i].hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
+		var i,
+			device;
 
-				sensorDevice = devices[i];
+		for ( i = 0; i < devices.length; ++i ) {
+			device = devices[i];
+			if ( device instanceof PositionSensorVRDevice &&
+					( !sensorDevice || device.hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
+
+				sensorDevice = device;
 				console.log('Using Sensor Device:', sensorDevice.deviceName);
 
 				if ( sensorDevice.zeroSensor ) {

@@ -8300,8 +8300,11 @@ if (typeof window === undefined) {
       var offset = new VIZI.Point();
       var shape = new THREE.Shape();
 
-      // TODO: Don't manually use first set of coordinates (index 0)
-      _.each(feature.outline[0], function(coord, index) {
+      var outer = feature.outline.shift();
+      var inners = feature.outline;
+
+      // Create outer shape
+      _.each(outer, function(coord, index) {
         var latLon = new VIZI.LatLon(coord[1], coord[0]);
         var geoCoord = project(latLon);
 
@@ -8321,6 +8324,25 @@ if (typeof window === undefined) {
         } else {
           shape.lineTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
         }
+      });
+
+      // Create inner shapes (holes)
+      _.each(inners, function(inner, index) {
+        var innerPath = new THREE.Path();
+        
+        _.each(inner, function(coord, index) {
+          var latLon = new VIZI.LatLon(coord[1], coord[0]);
+          var geoCoord = project(latLon);
+
+          // Move if first coordinate
+          if (index === 0) {
+            innerPath.moveTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
+          } else {
+            innerPath.lineTo( geoCoord.x + offset.x, geoCoord.y + offset.y );
+          }
+        });
+
+        shape.holes.push(innerPath);
       });
 
       // TODO: Don't have random height logic in here
@@ -8663,7 +8685,15 @@ if (typeof window === undefined) {
 
     VIZI.BlueprintOutput.call(self, options);
 
-    _.defaults(self.options, {});
+    _.defaults(self.options, {
+      materialType: "LineBasicMaterial",
+      materialOptions: {}
+    });
+
+    _.defaults(self.options.materialOptions, {
+      color: 0xff0000,
+      linewidth: 3
+    });
 
     // Triggers and actions reference
     self.triggers = [
@@ -8693,10 +8723,13 @@ if (typeof window === undefined) {
   VIZI.BlueprintOutputDebugLines.prototype.outputLines = function(data) {
     var self = this;
 
-    var material = new THREE.LineBasicMaterial({
-      color: 0xff0000,
-      linewidth: 3
-    });
+    var materialType = self.options.materialType;
+    if (!materialType || typeof THREE[materialType] !== "function") {
+      materialType = "LineBasicMaterial";
+    }
+
+    var materialOptions = _.clone(self.options.materialOptions);
+    var material = new THREE[materialType](materialOptions);
 
     var geom = new THREE.Geometry();
 
@@ -8713,7 +8746,7 @@ if (typeof window === undefined) {
       }
 
       // TODO: Get this from options
-      var height = point.height || 10;
+      var height = point.height || self.options.height || 10;
 
       // Multiply height in meters by pixels per meter ratio at latitude
       height *= pixelsPerMeter.y;
@@ -8875,12 +8908,23 @@ if (typeof window === undefined) {
 
     VIZI.BlueprintOutput.call(self, options);
 
+    _.defaults(self.options, {
+      materialType: "MeshBasicMaterial",
+      materialOptions: {}
+    });
+
+    _.defaults(self.options.materialOptions, {
+      // color: 0x00FF00,
+      depthWrite: false,
+      transparent: true
+    });
+
     // Triggers and actions reference
     self.triggers = [
       {name: "initialised", arguments: ["tiles"]},
       {name: "gridUpdated", arguments: ["tiles"]}
     ];
-    
+
     self.actions = [
       {name: "outputImageTile", arguments: ["image", "tile"]}
     ];
@@ -8925,8 +8969,11 @@ if (typeof window === undefined) {
 
     var grid = new VIZI.BlueprintHelperTileGrid(self.world, gridOptions);
 
-    grid.on("moved", function(tiles, diff) {
-      if (VIZI.DEBUG) console.log("Grid moved", tiles, diff);
+    function updateTiles(tiles) {
+      // Only emit update event if grid is enabled
+      if (grid.disable) {
+        return;
+      }
 
       var oldImages = gridOutput.images;
       var newTiles = [];
@@ -8954,6 +9001,12 @@ if (typeof window === undefined) {
         material.needsUpdate = true;
       });
 
+      self.emit("gridUpdated", tiles, newTiles);
+    }
+
+    grid.on("moved", function(tiles, diff) {
+      if (VIZI.DEBUG) console.log("Grid moved", tiles, diff);
+
       // TODO: This whole tile size calculation probably only needs doing once
       var geoBounds = {
         ne: self.world.project(new VIZI.LatLon(grid.boundsLatLon.n, grid.boundsLatLon.e)),
@@ -8967,10 +9020,7 @@ if (typeof window === undefined) {
       gridOutput.mesh.position.x += (size[0] / grid.tileCount.x) * diff.x;
       gridOutput.mesh.position.z += (size[1] / grid.tileCount.y) * diff.y;
 
-      // Only emit update event if grid is enabled
-      if (!grid.disable) {
-        self.emit("gridUpdated", newTiles);
-      }
+      updateTiles(tiles);
     });
 
     grid.on("disabled", function() {
@@ -8982,7 +9032,7 @@ if (typeof window === undefined) {
     grid.on("enabled", function() {
       if (VIZI.DEBUG) console.log("Grid enabled");
 
-      self.emit("gridUpdated", grid.tiles);
+      updateTiles(grid.tiles);
 
       gridOutput.mesh.visible = true;
     });
@@ -9006,16 +9056,28 @@ if (typeof window === undefined) {
   VIZI.BlueprintOutputImageTiles.prototype.createGridObject = function(grid, output) {
     var self = this;
 
+    var materialType = self.options.materialType;
+    if (!materialType || typeof THREE[materialType] !== "function") {
+      materialType = "MeshLambertMaterial";
+    }
+
+    var materialOptions = _.clone(self.options.materialOptions);
+
     var materials = [];
 
-    for (var x = 0; x < grid.tileCount.x; x++) {
-      for (var y = 0; y < grid.tileCount.y; y++) {
-        materials.push(new THREE.MeshBasicMaterial({
-          // color: 0x00FF00,
-          // map: texture,
-          depthWrite: false,
-          transparent: true
-        }));
+    var x, y;
+
+    for (x = 0; x < grid.tileCount.x; x++) {
+      for (y = 0; y < grid.tileCount.y; y++) {
+        var material = new THREE[materialType](materialOptions);
+
+        // Make material invisible until it has an image loaded
+        material.opacity = 0;
+
+        // Update material otherwise canvas shows up black
+        material.needsUpdate = true;
+
+        materials.push(material);
       }
     }
 
@@ -9026,22 +9088,24 @@ if (typeof window === undefined) {
 
     // Why is this tilesize so random?
     // TODO: Work out if the tilesize not being a proper square for square-shaped bounding coordinates is a problem (eg. 4825.486315913922, 4825.486315915361)
-    var size = [Math.abs(geoBounds.ne.x - geoBounds.sw.x), Math.abs(geoBounds.ne.y - geoBounds.sw.y)];
+    var xMeshSize = Math.abs(geoBounds.ne.x - geoBounds.sw.x);
+    var yMeshSize = Math.abs(geoBounds.ne.y - geoBounds.sw.y);
 
-    var xSize = size[0] / grid.tileCount.x;
-    var ySize = size[1] / grid.tileCount.y;
-    var geom = new THREE.PlaneBufferGeometry(xSize, ySize, 1, 1);
+    var xTileSize = xMeshSize / grid.tileCount.x;
+    var yTileSize = yMeshSize / grid.tileCount.y;
+
+    var geom = new THREE.PlaneBufferGeometry(xTileSize, yTileSize, 1, 1);
 
     var gridMesh = new THREE.Object3D();
 
     var meshes = [];
-    for (var y = 0; y < grid.tileCount.y; y++) {
-      for (var x = 0; x < grid.tileCount.x; x++) {
+    for (y = 0; y < grid.tileCount.y; y++) {
+      for (x = 0; x < grid.tileCount.x; x++) {
         var mesh = new THREE.Mesh(geom, materials[meshes.length]);
-        mesh.position.x = (x - grid.tileCount.x / 2 + 0.5) * xSize;
-        mesh.position.y = -(y - grid.tileCount.y / 2 + 0.5) * ySize;
+        mesh.position.x = (x - grid.tileCount.x / 2 + 0.5) * xTileSize;
+        mesh.position.y = -(y - grid.tileCount.y / 2 + 0.5) * yTileSize;
         mesh.renderDepth = grid.tileZoom * -1;
-        //mesh.rotation.x = -90 * Math.PI / 180;
+
         gridMesh.add(mesh);
         meshes.push(mesh);
       }
@@ -9050,10 +9114,8 @@ if (typeof window === undefined) {
     // Hacky method for forcing render depth / layers using tile zoom
     gridMesh.renderDepth = grid.tileZoom * -1;
 
-    var centerPos = [geoBounds.sw.x + (size[0] / 2), geoBounds.sw.y - (size[1] / 2)];
-
-    gridMesh.position.x = centerPos[0];
-    gridMesh.position.z = centerPos[1];
+    gridMesh.position.x = geoBounds.sw.x + (xMeshSize / 2);
+    gridMesh.position.z = geoBounds.sw.y - (yMeshSize / 2);
 
     // Flip to horizontal
     gridMesh.rotation.x = -90 * Math.PI / 180;
@@ -9077,16 +9139,23 @@ if (typeof window === undefined) {
   //   z: 19
   // }
   VIZI.BlueprintOutputImageTiles.prototype.outputImageTile = function(image, tile) {
-    var self = this;
+     var self = this;
 
     // Find grid
     var gridHash = self.grids[tile.z];
+
+    var bounds = gridHash.grid.bounds;
+
+    // Tile out of bounds
+    if (tile.x < bounds.w || tile.x > bounds.e || tile.y > bounds.s || tile.y < bounds.n) {
+      // This is probably an old image loading late, in the wrong place
+      return;
+    }
 
     var localCoords = gridHash.grid.globalToLocalTiles(tile.x, tile.y);
     var materialIndex = localCoords.y * gridHash.grid.tileCount.x + localCoords.x;
 
     if (materialIndex < 0 || materialIndex >= gridHash.materials.length) {
-      // This is probably an old image loading late
       return;
     }
 
@@ -9101,20 +9170,11 @@ if (typeof window === undefined) {
 
     // TODO: Set this to renderer.getMaxAnisotropy() / 4
     texture.anisotropy = 4;
-    //texture.flipY = true;
     texture.needsUpdate = true;
 
     material.map = texture;
     material.opacity = 1;
     material.needsUpdate = true;
-
-    /*
-    if (self.debug) {
-      context.strokeStyle = "#ff0000";
-      context.lineWidth = 5;
-      context.strokeRect(imagePos[0], imagePos[1], 256, 256);
-    }
-    */
 
     var key = tile.x + '/' + tile.y;
     gridHash.images[key] = {

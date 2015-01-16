@@ -8,4 +8,4 @@ Original code is made avalable under [MIT License](http://www.opensource.org/lic
 ## Author
 Code, concept and design by [Brian Chirls](https://github.com/brianchirls), [POV](http://www.pbs.org/pov/) Digital Technology Fellow
 
-[Vizicities](https://github.com/vizicities/vizicities) by [Robin Hawkes](https://github.com/robhawkes) and [Pete Smart](https://twitter.com/petewsmart)
+[Vizicities](https://github.com/vizicities/vizicities) by [Robin Hawkes](https://github.com/robhawkes)

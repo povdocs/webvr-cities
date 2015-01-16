@@ -2,18 +2,29 @@
 	"input": {
 		"type": "BlueprintInputGeoJSON",
 		"options": {
-			"tilePath": "http://vector.mapzen.com/osm/buildings/{z}/{x}/{y}.json"
+			"tilePath": "http://uscensusincome.s3-website-us-east-1.amazonaws.com/income/{z}/{x}/{y}.json"
 		}
 	},
 	"output": {
-		"type": "BlueprintOutputBuildingTiles",
+		"type": "BlueprintOutputBarTiles",
 		"options": {
 			"grids": [{
-				"zoom": 15,
-				"tilesPerDirection": 2,
-				"cullZoom": 13
+				"zoom": 12,
+				"tilesPerDirection": 1,
+				"cullZoom": 8
 			}],
-			"workerURL": "js/lib/vizi-worker.js"
+			"workerURL": "js/lib/vizi-worker.js",
+
+			"scaleHeight": 0.001,
+			"radius": 10,
+
+			"materialType": "MeshPhongMaterial",
+			"materialOptions": {
+				"transparent": true,
+				"opacity": 0.6,
+				"color": 15597568,
+				"emissive": 204
+			}
 		}
 	},
 	"triggers": [{
@@ -41,17 +52,17 @@
 		"triggerName": "tileReceived",
 		"triggerArguments": ["geoJSON", "tile"],
 		"actionObject": "output",
-		"actionName": "outputBuildingTile",
-		"actionArguments": ["buildings", "tile"],
+		"actionName": "outputBarTile",
+		"actionArguments": ["data", "tile"],
 		"actionOutput": {
-			"buildings": {
+			"data": {
 				"process": "map",
 				"itemsObject": "geoJSON",
 				"itemsProperties": "features",
 				"transformation": {
-					"outline": "geometry.coordinates",
-					"height": "properties.height",
-					"min_height": "properties.min_height"
+					"geometryType": "geometry.type",
+					"coordinates": "geometry.coordinates",
+					"height": "properties.income"
 				}
 			},
 			"tile": "tile"

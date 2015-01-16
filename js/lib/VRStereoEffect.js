@@ -141,7 +141,7 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 		for (i = 0; i < devices.length; i++) {
 			device = devices[i];
 			if (device instanceof HMDVRDevice &&
-					(!hmdDevice || devices[i].hardwareUnitId !== hmdDevice.hardwareUnitId)) {
+					(!hmdDevice || device.hardwareUnitId !== hmdDevice.hardwareUnitId)) {
 
 				hmdDevice = device;
 				console.log('Using HMD Device:', hmdDevice.deviceName);
