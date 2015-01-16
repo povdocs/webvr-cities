@@ -34,7 +34,7 @@
 		gps = {
 			'anthonybike.gpx': {
 				title: 'Bike: Central Park and Midtown',
-				start: [40.7867760, -73.9709530]
+				start: [40.785967525194586, -73.96889110969782]
 			},
 			'activity_372746372.gpx': {
 				title: 'Run: SOS 1',
@@ -50,15 +50,15 @@
 			},
 			'activity_411138967.gpx': {
 				title: 'Bike: Central Park, 2 loops',
-				start: [40.7867760, -73.9709530]
+				start: [40.785967525194586, -73.96889110969782]
 			},
 			'activity_417748581.gpx': {
 				title: 'Bike: Central Park and Midtown',
-				start: [40.7867760, -73.9709530]
+				start: [40.785967525194586, -73.96889110969782]
 			},
 			'activity_439718275.gpx': {
 				title: 'Bike: Central Park',
-				start: [40.7867760, -73.9709530]
+				start: [40.785967525194586, -73.96889110969782]
 			}
 		};
 
@@ -122,8 +122,8 @@
 
 		return {
 			layers: layers,
-			latitude: 40.7867760,
-			longitude: -73.9709530,
+			latitude: 40.785967525194586,
+			longitude: -73.96889110969782,
 			height: 2,
 			info: info,
 
