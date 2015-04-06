@@ -23,8 +23,11 @@ THREE.VRControls = function ( object, options ) {
 
 		for ( i = 0; i < devices.length; ++i ) {
 			device = devices[i];
-			if ( device instanceof PositionSensorVRDevice &&
-					( !sensorDevice || device.hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
+			if ( devices[i] instanceof PositionSensorVRDevice ) {
+
+				if ( sensorDevice && devices[i].hardwareUnitId === sensorDevice.hardwareUnitId ) {
+					break;
+				}
 
 				sensorDevice = device;
 				console.log('Using Sensor Device:', sensorDevice.deviceName);
@@ -70,16 +73,18 @@ THREE.VRControls = function ( object, options ) {
 
 	this.update = function() {
 		// Applies head rotation from sensor data.
-		if (this.freeze) {
+		if (self.freeze) {
 			return;
 		}
 
 		if ( sensorDevice ) {
 			vrState = sensorDevice.getState();
-			if ( vrState && vrState.orientation ) {
-				object.quaternion.copy( vrState.orientation );
+			if ( vrState ) {
+				if ( vrState.orientation && vrState.hasOrientation !== false ) {
+					object.quaternion.copy( vrState.orientation );
+				}
 
-				if ( vrState.position ) {
+				if ( vrState.position && vrState.hasPosition !== false ) {
 					// vrState.position is null if using DK1 or if DK2 camera is not plugged in
 					object.position.copy( vrState.position );
 				}
@@ -104,8 +109,11 @@ THREE.VRControls = function ( object, options ) {
 	//zeros only rotation on Y axis
 	//todo: find out if it zeros out position. need a DK2 to test
 	this.zeroSensor = function () {
+		if (sensorDevice && sensorDevice.zeroSensor) {
+			sensorDevice.zeroSensor();
+		}
 		zeroAngle = object.rotation.y;
-		this.update();
+		self.update();
 	};
 
 	this.freeze = false;
