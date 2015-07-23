@@ -1,5 +1,5 @@
 (function () {
-	var PEER_API_KEY = 'evy8rcz8vdy22o6r',
+	var PEER_API_KEY = 'af7e49eb-ae1a-45dd-8305-03d5b6c07ca4',
 
 		//communication stuff
 		peer,
