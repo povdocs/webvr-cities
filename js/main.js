@@ -177,13 +177,7 @@
 
 	function resize() {
 		var width = window.innerWidth,
-			height = window.innerHeight,
-			devicePixelRatio = window.devicePixelRatio || 1;
-
-		if (!vrEffect.isFullscreen()) {
-			width *= devicePixelRatio;
-			height *= devicePixelRatio;
-		}
+			height = window.innerHeight;
 
 		_.each(dataVizes, function (dataViz) {
 			if (dataViz && dataViz.resize) {
@@ -193,7 +187,7 @@
 
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
-		renderer.setSize(width / devicePixelRatio, height / devicePixelRatio);
+		renderer.setSize(width / 1, height / 1);
 
 		depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
 		sceneTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
@@ -515,8 +509,7 @@
 			var active = (name in dataVizes),
 				dataViz = dataVizes[name],
 				lat, lon,
-				width, height,
-				devicePixelRatio;
+				width, height;
 
 			if (!name || !options || dataViz) {
 				return;
@@ -597,12 +590,6 @@
 			if (dataViz.resize) {
 				width = window.innerWidth;
 				height = window.innerHeight;
-				devicePixelRatio = window.devicePixelRatio || 1;
-
-				if (!vrEffect.isFullscreen()) {
-					width *= devicePixelRatio;
-					height *= devicePixelRatio;
-				}
 
 				dataViz.resize(height, width);
 			}
