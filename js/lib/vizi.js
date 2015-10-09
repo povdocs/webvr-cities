@@ -8324,6 +8324,10 @@ if (typeof window === undefined) {
       var outer = feature.outline.shift();
       var inners = feature.outline;
 
+      if (typeof outer !== 'object') {
+        return;
+      }
+
       // Create outer shape
       _.each(outer, function(coord, index) {
         var latLon = new VIZI.LatLon(coord[1], coord[0]);
